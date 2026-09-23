@@ -1,0 +1,33 @@
+{
+  "name": "vocabulary-notebook",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "An offline-first vocabulary notebook PWA for English tutoring students.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "dependencies": {
+    "dexie": "^4.0.8",
+    "dexie-react-hooks": "^1.1.7",
+    "html-to-image": "^1.11.11",
+    "jspdf": "^2.5.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.8",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "pngjs": "^7.0.0",
+    "typescript": "~5.5.4",
+    "vite": "^5.4.7",
+    "vite-plugin-pwa": "^0.20.5",
+    "vitest": "^2.1.1"
+  }
+}

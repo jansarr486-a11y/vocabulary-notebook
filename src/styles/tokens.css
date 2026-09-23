@@ -1,0 +1,81 @@
+/* ---------- Fonts (self-hosted, offline-safe) ---------- */
+@font-face {
+  font-family: 'Caveat';
+  src: url('/fonts/caveat-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Caveat';
+  src: url('/fonts/caveat-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/nunito-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/nunito-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/nunito-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Palette: warm notebook / journal ---------- */
+:root {
+  --paper: #faf6ee;
+  --paper-deep: #f3ecdf;
+  --page: #fffdf7;
+  --ink: #3b3128;
+  --ink-soft: #6b5d4f;
+  --ink-faint: #9c8d7c;
+  --line: #ded2c0;
+
+  --accent: #c96f4a;      /* terracotta — default, themed per profile */
+  --accent-deep: #b05b3e;
+  --accent-soft: #f6e3d8;
+
+  --red: #c44a4a;
+  --red-soft: #fbe3e3;
+  --yellow: #d9a13c;
+  --yellow-soft: #fbeed3;
+  --green: #5f9d5f;
+  --green-soft: #e3efdd;
+  --blue: #4a7bb5;
+  --blue-soft: #e3ecf7;
+
+  --shadow-sm: 0 1px 3px rgba(59, 49, 40, 0.12);
+  --shadow-md: 0 4px 14px rgba(59, 49, 40, 0.14);
+  --shadow-lg: 0 12px 32px rgba(59, 49, 40, 0.22);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --font-hand: 'Caveat', 'Comic Sans MS', cursive;
+  --font-body: 'Nunito', system-ui, -apple-system, sans-serif;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --tap: 44px; /* minimum touch target for younger students */
+}
