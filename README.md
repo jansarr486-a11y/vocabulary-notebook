@@ -7,6 +7,9 @@ An offline-first, installable **PWA** for a private English tutor's students
 student's own browser (IndexedDB) — nothing ever leaves the device except one
 optional, clearly-marked dictionary lookup.
 
+**Live app:** https://jansarr486-a11y.github.io/vocabulary-notebook/
+(open in Chrome/Edge → install icon in the address bar → works offline forever)
+
 ## Features
 
 - **Local profiles** — multiple students per device, optional 4-digit PIN
