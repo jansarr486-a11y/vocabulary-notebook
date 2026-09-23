@@ -1,6 +1,7 @@
 import { dayKey } from './time';
 import {
   createReview,
+  createSpelling,
   defaultSettings,
   emptyProfileStats,
   emptySections,
@@ -11,8 +12,10 @@ import {
   type ProfileSettings,
   type Word,
   type WordSection,
+  type WordSpelling,
 } from './models';
 import { applyReviewRating, intervalFor, recordActivity } from './schedule';
+import { bumpDifficulty, decayDifficulty } from './spelling';
 import { hashPin } from './pin';
 import { db, type DictionaryCacheEntry } from './db';
 
@@ -100,6 +103,7 @@ export function newWord(profileId: number, input: NewWordInput, now = Date.now()
     imageMime: input.imageMime,
     sections: emptySections(),
     review: createReview(),
+    spelling: createSpelling(),
     schemaVersion: 1,
   };
 }
@@ -203,6 +207,32 @@ export async function applyReviewResult(
   await db.words.put(w);
 }
 
+// ---------- spelling puzzle ----------
+
+/**
+ * Persist the outcome of one Spelling Puzzle word.
+ * - any mistake this session: +1 difficulty
+ * - clean session (no retries): slow daily decay + lastSessionDay stamp
+ */
+export async function applySpellingResult(
+  wordId: number,
+  result: { mistakes: number; sessionDay: string },
+  now = Date.now(),
+): Promise<void> {
+  const w = await db.words.get(wordId);
+  if (!w) return;
+  const base = w.spelling ?? createSpelling();
+  let next: WordSpelling;
+  if (result.mistakes > 0) {
+    next = bumpDifficulty(base, now);
+  } else {
+    next = decayDifficulty(base, result.sessionDay);
+  }
+  next = { ...next, lastSessionDay: result.sessionDay, lastAttemptAt: now };
+  w.spelling = next;
+  await db.words.put(w);
+}
+
 // ---------- dictionary cache ----------
 
 export async function getCachedDictionaryEntry(wordLower: string): Promise<DictionaryCacheEntry | undefined> {
@@ -243,6 +273,7 @@ export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
       imageDataUrl: w.imageBlob ? await blobToDataUrl(w.imageBlob) : undefined,
       sections: w.sections,
       review: w.review,
+      spelling: w.spelling,
     });
   }
   return {
@@ -298,6 +329,7 @@ export async function importBackup(
       imageMime: bw.imageDataUrl ? bw.imageDataUrl.slice(5, bw.imageDataUrl.indexOf(';')) : undefined,
       sections: (bw.sections ?? emptySections()).map((s) => ({ ...s })),
       review: bw.review ?? createReview(),
+      spelling: bw.spelling ?? createSpelling(),
       schemaVersion: 1,
     };
     await db.words.add(word);
