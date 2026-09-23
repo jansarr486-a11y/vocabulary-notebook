@@ -10,6 +10,7 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { Notebook } from './features/notebook/Notebook';
 import { WordCard } from './features/notebook/WordCard';
 import { Review } from './features/review/Review';
+import { Spelling } from './features/spelling/Spelling';
 import { Settings } from './features/settings/Settings';
 
 /** Registers the service worker; checks for updates hourly while open. */
@@ -73,6 +74,7 @@ function AppRoutes() {
           <Route path="/notebook" element={<Notebook />} />
           <Route path="/word/:id" element={<WordCard />} />
           <Route path="/review" element={<Review />} />
+          <Route path="/spelling" element={<Spelling />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

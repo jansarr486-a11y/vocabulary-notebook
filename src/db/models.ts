@@ -77,6 +77,16 @@ export interface WordReview {
   pressure: number;
 }
 
+/** Per-word difficulty tracking for the Spelling Puzzle game. */
+export interface WordSpelling {
+  /** 0 (trivial) .. 10 (always misspelled). +1 per wrong check, decays on clean sweeps. */
+  difficulty: number;
+  /** Timestamp of the last spelling attempt. */
+  lastAttemptAt?: number;
+  /** Local-day key of the last session that practiced this word ('YYYY-MM-DD'). */
+  lastSessionDay?: string;
+}
+
 export interface Word {
   id?: number;
   profileId: number;
@@ -92,6 +102,8 @@ export interface Word {
   imageMime?: string;
   sections: WordSection[]; // length 4
   review: WordReview;
+  /** Added in v1.1 — absent on rows created before the Spelling Puzzle existed. */
+  spelling?: WordSpelling;
   schemaVersion: number;
 }
 
@@ -108,6 +120,7 @@ export interface BackupWord {
   imageDataUrl?: string;
   sections: WordSection[];
   review: WordReview;
+  spelling?: WordSpelling;
 }
 
 export interface BackupEnvelope {
@@ -139,6 +152,10 @@ export function emptySections(): WordSection[] {
 
 export function createReview(): WordReview {
   return { weight: 1, pressure: 0 };
+}
+
+export function createSpelling(): WordSpelling {
+  return { difficulty: 0 };
 }
 
 export const LEVEL_TAG_STYLES: Record<LevelTag, { bg: string; fg: string }> = {

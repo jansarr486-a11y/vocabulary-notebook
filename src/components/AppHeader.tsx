@@ -26,6 +26,9 @@ export function AppHeader() {
           <NavLink to="/review" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             🔁 <span className="nav-label">Review</span>
           </NavLink>
+          <NavLink to="/spelling" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            🧩 <span className="nav-label">Spelling</span>
+          </NavLink>
           <NavLink to="/settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             ⚙️ <span className="nav-label">Settings</span>
           </NavLink>
