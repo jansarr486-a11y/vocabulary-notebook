@@ -34,6 +34,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // The bundled word library (8,000+ entries) pushes the main JS chunk
+        // past the 2 MiB default — raise the precache ceiling to keep the app
+        // fully offline-capable.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         runtimeCaching: [
