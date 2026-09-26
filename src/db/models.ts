@@ -77,6 +77,17 @@ export interface WordReview {
   pressure: number;
 }
 
+/**
+ * Provenance stamp for words copied in from the Word Library. The entry is a
+ * full, independent copy — editing it later never touches the library data.
+ */
+export interface WordLibrarySource {
+  collectionId: string;
+  collectionTitle: string;
+  bookId: string;
+  bookTitle: string;
+}
+
 /** Per-word difficulty tracking for the Spelling Puzzle game. */
 export interface WordSpelling {
   /** 0 (trivial) .. 10 (always misspelled). +1 per wrong check, decays on clean sweeps. */
@@ -95,8 +106,12 @@ export interface Word {
   wordLower: string;
   phonetic?: string;
   partOfSpeech?: string;
+  /** Optional Persian (fa) translation shown under the English definition. */
+  persianMeaning?: string;
   levelTags: LevelTag[];
   courseTag?: string;
+  /** Where this word was copied from, if it came from the Word Library. */
+  librarySource?: WordLibrarySource;
   dateAdded: number;
   imageBlob?: Blob;
   imageMime?: string;
@@ -113,8 +128,10 @@ export interface BackupWord {
   word: string;
   phonetic?: string;
   partOfSpeech?: string;
+  persianMeaning?: string;
   levelTags: LevelTag[];
   courseTag?: string;
+  librarySource?: WordLibrarySource;
   dateAdded: number;
   /** base64 data URL when the entry carries an image. */
   imageDataUrl?: string;

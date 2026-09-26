@@ -9,6 +9,7 @@ import { PinUnlock } from './features/profiles/PinUnlock';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { Notebook } from './features/notebook/Notebook';
 import { WordCard } from './features/notebook/WordCard';
+import { Library } from './features/library/Library';
 import { Review } from './features/review/Review';
 import { Spelling } from './features/spelling/Spelling';
 import { Settings } from './features/settings/Settings';
@@ -73,6 +74,9 @@ function AppRoutes() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/notebook" element={<Notebook />} />
           <Route path="/word/:id" element={<WordCard />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/library/:collectionId" element={<Library />} />
+          <Route path="/library/:collectionId/:bookId" element={<Library />} />
           <Route path="/review" element={<Review />} />
           <Route path="/spelling" element={<Spelling />} />
           <Route path="/settings" element={<Settings />} />

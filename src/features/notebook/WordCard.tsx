@@ -255,6 +255,11 @@ export function WordCard() {
             <img src={thumb} alt={`Illustration for ${word.word}`} />
           </div>
         )}
+        {word.persianMeaning && (
+          <p className="persian-meaning" dir="rtl" lang="fa">
+            {word.persianMeaning}
+          </p>
+        )}
         <div className="sec-actions" style={{ marginTop: 'var(--sp-4)' }}>
           <button className="btn btn-sm" onClick={() => setEditing(true)}>
             ✏️ Edit word
@@ -291,6 +296,11 @@ export function WordCard() {
             ) : isDone && !isOpen ? (
               <div className="sec-body">
                 <p className="sec-text">{section?.text}</p>
+                {idx === 1 && word.persianMeaning && (
+                  <p className="persian-meaning" dir="rtl" lang="fa">
+                    {word.persianMeaning}
+                  </p>
+                )}
                 <div className="sec-actions">
                   <span className="faint" style={{ fontSize: '0.78rem', alignSelf: 'center' }}>
                     done {section?.completedAt ? new Date(section.completedAt).toLocaleDateString() : ''}

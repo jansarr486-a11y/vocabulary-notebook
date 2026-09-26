@@ -17,6 +17,7 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
   const [word, setWord] = useState(existing?.word ?? '');
   const [phonetic, setPhonetic] = useState(existing?.phonetic ?? '');
   const [pos, setPos] = useState(existing?.partOfSpeech ?? '');
+  const [persian, setPersian] = useState(existing?.persianMeaning ?? '');
   const [tags, setTags] = useState<LevelTag[]>(existing?.levelTags ?? []);
   const [course, setCourse] = useState(existing?.courseTag ?? '');
   const [blob, setBlob] = useState<Blob | undefined>(undefined);
@@ -51,6 +52,7 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
         word: word.trim(),
         phonetic: phonetic.trim() || undefined,
         partOfSpeech: pos || undefined,
+        persianMeaning: persian.trim() || undefined,
         levelTags: tags,
         courseTag: course.trim() || undefined,
         imageBlob: removeImage ? undefined : (blob ?? undefined),
@@ -114,6 +116,20 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor="wf-persian">Persian meaning (optional)</label>
+        <input
+          id="wf-persian"
+          className="input"
+          dir="rtl"
+          lang="fa"
+          placeholder="مثلاً: سخاوتمند"
+          value={persian}
+          maxLength={120}
+          onChange={(e) => setPersian(e.target.value)}
+        />
       </div>
 
       <div className="field">

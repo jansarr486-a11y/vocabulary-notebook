@@ -29,6 +29,11 @@ function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2
         {word.partOfSpeech ? `${word.partOfSpeech} · ` : ''}
         added {new Date(word.dateAdded).toLocaleDateString()}
       </span>
+      {word.persianMeaning && (
+        <span className="persian-meaning" dir="rtl" lang="fa">
+          {word.persianMeaning}
+        </span>
+      )}
       <div className="dots">
         {statuses.map((s) => (
           <StateDot key={s.index} state={s.state} />

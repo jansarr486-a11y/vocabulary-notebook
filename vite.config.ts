@@ -38,9 +38,10 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // Optional dictionary auto-suggest: cached so it keeps working offline
-            // once a word has been fetched once. Everything else is precached.
-            urlPattern: /^https:\/\/api\.dictionaryapi\.dev\/.*/i,
+            // Optional dictionary auto-suggest (api.datamuse.com): cached so it
+            // keeps working offline once a word has been fetched once.
+            // Everything else is precached.
+            urlPattern: /^https:\/\/api\.datamuse\.com\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'dictionary-api-cache',
