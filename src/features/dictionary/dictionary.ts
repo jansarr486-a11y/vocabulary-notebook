@@ -8,23 +8,42 @@ export interface Suggestion {
   fromCache: boolean;
 }
 
-const API = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
-const TIMEOUT_MS = 6000;
+// api.datamuse.com (WordNet-backed) replaced api.dictionaryapi.dev, which is
+// unreachable from some proxied networks. `md=dp` adds defs ("pos\tdefinition")
+// and a `seq` joined pronunciation. Datamuse has no example sentences, so
+// `example` stays empty.
+const API = 'https://api.datamuse.com/words';
+const TIMEOUT_MS = 8000;
 
-interface ApiDefinition {
-  definition: string;
-  example?: string;
-}
-interface ApiMeaning {
-  partOfSpeech: string;
-  definitions: ApiDefinition[];
-}
-interface ApiEntry {
+const POS_NAMES: Record<string, string> = {
+  n: 'noun',
+  v: 'verb',
+  adj: 'adjective',
+  adv: 'adverb',
+  s: 'adjective', // WordNet "satellite adjective"
+  r: 'adverb',
+  u: '',
+};
+
+interface DatamuseWord {
   word: string;
-  phonetic?: string;
-  phonetics?: { text?: string; audio?: string }[];
-  meanings?: ApiMeaning[];
+  tags?: string[];
+  defs?: string[];
+  seq?: string[];
 }
+
+function normalizePhonetic(seq: string[]): string | undefined {
+  // seq joins AmE/BrE pronunciations ("ˈæbs(ə)ns , abˈsiː ; ˈæbsənt") and may
+  // carry stray control characters — keep printable text only.
+  const joined = seq
+    .join(' ; ')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return joined || undefined;
+}
+
+const NOT_FOUND = new Error('404 no definition found');
 
 /**
  * Look up a word. Order: IndexedDB cache → network (cached by the service
@@ -52,45 +71,35 @@ export async function suggestDefinition(rawWord: string): Promise<Suggestion> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(API + encodeURIComponent(wordLower), { signal: controller.signal });
-    if (!res.ok) throw new Error(`Dictionary API ${res.status}`);
-    const data = (await res.json()) as ApiEntry[];
-    if (!Array.isArray(data) || data.length === 0) throw new Error('Empty result');
+    const res = await fetch(`${API}?sp=${encodeURIComponent(wordLower)}&md=dp&max=1`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Datamuse ${res.status}`);
+    const data = (await res.json()) as DatamuseWord[];
+    const entry = Array.isArray(data) ? data[0] : undefined;
+    const rawDef = entry?.defs?.find((d) => d.split('\t')[1]?.trim());
 
-    // Prefer a meaning whose definition ships with an example.
-    let best: { def: string; ex?: string; pos?: string } | undefined;
-    let fallback: { def: string; ex?: string; pos?: string } | undefined;
-    for (const entry of data) {
-      for (const meaning of entry.meanings ?? []) {
-        for (const d of meaning.definitions ?? []) {
-          if (!d.definition) continue;
-          if (!fallback) fallback = { def: d.definition, ex: d.example, pos: meaning.partOfSpeech };
-          if (d.example && !best) {
-            best = { def: d.definition, ex: d.example, pos: meaning.partOfSpeech };
-            break;
-          }
-        }
-        if (best) break;
-      }
-      if (best) break;
-    }
-    const chosen = best ?? fallback;
-    if (!chosen) throw new Error('No definitions in response');
+    if (!entry || !rawDef) throw NOT_FOUND;
+    // `sp=` also matches spelled-like words — a typo would surface a real but
+    // irrelevant definition, so only accept the exact word back.
+    if (entry.word.toLowerCase() !== wordLower) throw NOT_FOUND;
 
-    const phonetic = data.find((e) => e.phonetic)?.phonetic ?? data[0]?.phonetics?.find((p) => p.text)?.text;
+    const [posTag = '', ...rest] = rawDef.split('\t');
+    const definition = rest.join('\t').trim();
+    const pos = POS_NAMES[posTag.trim()] ?? '';
+    const phonetic = entry.seq ? normalizePhonetic(entry.seq) : undefined;
 
     await putDictionaryEntry({
       wordLower,
       fetchedAt: Date.now(),
-      definition: chosen.def,
-      example: chosen.ex,
+      definition,
       phonetic,
-      partOfSpeech: chosen.pos,
+      partOfSpeech: pos || undefined,
     });
 
-    return { definition: chosen.def, example: chosen.ex, phonetic, partOfSpeech: chosen.pos, fromCache: false };
+    return { definition, phonetic, partOfSpeech: pos || undefined, fromCache: false };
   } catch (err) {
-    // Remember 404s so we don't hammer the API for nonsense words while offline
+    // Remember misses so we don't hammer the API for nonsense words while offline
     if (err instanceof Error && err.message.includes('404')) {
       await putDictionaryEntry({ wordLower, fetchedAt: 0 }).catch(() => undefined);
     }

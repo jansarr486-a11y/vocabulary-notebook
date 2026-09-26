@@ -844,6 +844,248 @@
   flex-wrap: wrap;
 }
 
+/* ---------- Persian meaning subtitle ---------- */
+.persian-meaning {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.word-tile .persian-meaning {
+  font-size: 0.85rem;
+}
+
+/* ---------- Word Library ---------- */
+.lib-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-4);
+}
+.lib-collection-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--page);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.lib-collection-card:hover {
+  transform: translateY(-3px) rotate(-0.4deg);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+.lib-card-title {
+  font-family: var(--font-hand);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.lib-card-desc {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.lib-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-size: 0.82rem;
+}
+.lib-card-counts {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.lib-card-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  overflow: hidden;
+}
+.lib-card-bar i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  transition: width 0.4s ease;
+}
+.lib-chip-mixed {
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  border-color: var(--line);
+}
+.lib-chip-pos {
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* breadcrumb */
+.lib-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  margin-bottom: var(--sp-3);
+  color: var(--ink-faint);
+}
+.lib-crumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lib-crumb-link {
+  color: var(--accent-deep);
+  text-decoration: none;
+  font-weight: 700;
+}
+.lib-crumb-link:hover {
+  text-decoration: underline;
+}
+.lib-crumb-here {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.lib-crumb-sep {
+  color: var(--ink-faint);
+}
+
+/* batch action bar */
+.lib-batch-bar {
+  position: sticky;
+  top: 76px; /* below the sticky app header */
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-4);
+  background: var(--accent-soft);
+  border: 1.5px dashed var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.lib-search {
+  flex: 1 1 180px;
+  max-width: 280px;
+  min-height: calc(var(--tap) - 6px);
+  padding: 6px 10px;
+  font-size: 0.92rem;
+}
+
+.lib-batch-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* word rows */
+.lib-word-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.lib-word-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  box-shadow: var(--shadow-sm);
+}
+.lib-word-row.lib-word-added {
+  opacity: 0.75;
+}
+.lib-word-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lib-word-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.lib-word-headword {
+  font-family: var(--font-hand);
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+.lib-phonetic {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+.lib-word-def {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.lib-word-fa {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.lib-word-example {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+.lib-word-action {
+  flex-shrink: 0;
+  align-self: center;
+}
+.lib-chip-added {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: var(--green);
+}
+
+/* add checkbox styled as a button */
+.lib-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 var(--sp-3);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--page);
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 2px 2px 0 rgba(59, 49, 40, 0.2);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.lib-check input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.lib-check.checked {
+  background: var(--accent);
+  border-color: var(--accent-deep);
+  color: #fff;
+}
+.lib-check.checked input {
+  accent-color: #fff;
+}
+
 /* ---------- Exports preview ---------- */
 .summary-output {
   white-space: pre-wrap;

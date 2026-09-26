@@ -11,9 +11,11 @@ import {
   type Profile,
   type ProfileSettings,
   type Word,
+  type WordLibrarySource,
   type WordSection,
   type WordSpelling,
 } from './models';
+import type { LibraryWord } from '../features/library/libraryData';
 import { applyReviewRating, intervalFor, recordActivity } from './schedule';
 import { bumpDifficulty, decayDifficulty } from './spelling';
 import { hashPin } from './pin';
@@ -80,6 +82,7 @@ export interface NewWordInput {
   word: string;
   phonetic?: string;
   partOfSpeech?: string;
+  persianMeaning?: string;
   levelTags: LevelTag[];
   courseTag?: string;
   imageBlob?: Blob;
@@ -96,6 +99,7 @@ export function newWord(profileId: number, input: NewWordInput, now = Date.now()
     wordLower: word.toLowerCase(),
     phonetic: input.phonetic?.trim() || undefined,
     partOfSpeech: input.partOfSpeech || undefined,
+    persianMeaning: input.persianMeaning?.trim() || undefined,
     levelTags: input.levelTags,
     courseTag: input.courseTag?.trim() || undefined,
     dateAdded: now,
@@ -106,6 +110,68 @@ export function newWord(profileId: number, input: NewWordInput, now = Date.now()
     spelling: createSpelling(),
     schemaVersion: 1,
   };
+}
+
+/**
+ * Copy a Word Library entry into a student's notebook as a fresh, fully
+ * independent word. Section 1 (dictionary definition) is pre-filled but still
+ * editable; Section 3 (the student's own sentence) always starts EMPTY — that
+ * one is the whole point of the 4-section cycle.
+ */
+export function wordFromLibrary(
+  profileId: number,
+  lw: LibraryWord,
+  source: WordLibrarySource,
+  levelTag: LevelTag | undefined,
+  now = Date.now(),
+): Word {
+  const word = lw.word.trim();
+  const sections: WordSection[] = emptySections();
+  // Section 1 is pre-filled from the library; completion stays with the student.
+  sections[0].text = lw.definition.trim();
+  // Section 2 gets the library example as a draft the student can edit or replace
+  // once the normal cycle unlocks it (it unlocks when section 1 is completed).
+  if (lw.example) sections[1].text = lw.example.trim();
+  // Section 3 (own sentence) intentionally left EMPTY — active recall.
+  // No unlock stamping here: sectionUnlockAt computes the standard day-0 chain.
+
+  return {
+    profileId,
+    word,
+    wordLower: word.toLowerCase(),
+    phonetic: lw.phonetic,
+    partOfSpeech: lw.partOfSpeech,
+    persianMeaning: lw.persianMeaning,
+    levelTags: levelTag ? [levelTag] : [],
+    courseTag: `${source.collectionTitle} — ${source.bookTitle}`,
+    librarySource: source,
+    dateAdded: now,
+    sections,
+    review: createReview(),
+    spelling: createSpelling(),
+    schemaVersion: 1,
+  };
+}
+
+/**
+ * Add library words to a notebook in one transaction, skipping words that are
+ * already present (exact text, case-insensitive). Returns how many were added.
+ */
+export async function addLibraryWords(
+  profileId: number,
+  libraryWords: LibraryWord[],
+  source: WordLibrarySource,
+  levelTag: LevelTag | undefined,
+  now = Date.now(),
+): Promise<number> {
+  const existing = new Set(
+    (await listWords(profileId)).map((w) => w.wordLower),
+  );
+  const fresh = libraryWords.filter((lw) => !existing.has(lw.word.trim().toLowerCase()));
+  if (fresh.length === 0) return 0;
+  const rows = fresh.map((lw) => wordFromLibrary(profileId, lw, source, levelTag, now));
+  await db.transaction('rw', db.words, () => db.words.bulkAdd(rows));
+  return rows.length;
 }
 
 export async function addWord(word: Word): Promise<number> {
@@ -137,6 +203,7 @@ export async function updateWordHeader(id: number, changes: Partial<NewWordInput
   }
   if (changes.phonetic !== undefined) w.phonetic = changes.phonetic.trim() || undefined;
   if (changes.partOfSpeech !== undefined) w.partOfSpeech = changes.partOfSpeech || undefined;
+  if (changes.persianMeaning !== undefined) w.persianMeaning = changes.persianMeaning.trim() || undefined;
   if (changes.levelTags !== undefined) w.levelTags = changes.levelTags;
   if (changes.courseTag !== undefined) w.courseTag = changes.courseTag.trim() || undefined;
   if (changes.imageBlob !== undefined) {
@@ -267,8 +334,10 @@ export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
       word: w.word,
       phonetic: w.phonetic,
       partOfSpeech: w.partOfSpeech,
+      persianMeaning: w.persianMeaning,
       levelTags: w.levelTags,
       courseTag: w.courseTag,
+      librarySource: w.librarySource,
       dateAdded: w.dateAdded,
       imageDataUrl: w.imageBlob ? await blobToDataUrl(w.imageBlob) : undefined,
       sections: w.sections,
@@ -322,8 +391,10 @@ export async function importBackup(
       wordLower: bw.word.toLowerCase(),
       phonetic: bw.phonetic,
       partOfSpeech: bw.partOfSpeech,
+      persianMeaning: bw.persianMeaning,
       levelTags: bw.levelTags ?? [],
       courseTag: bw.courseTag,
+      librarySource: bw.librarySource,
       dateAdded: bw.dateAdded ?? now,
       imageBlob: bw.imageDataUrl ? await dataUrlToBlob(bw.imageDataUrl) : undefined,
       imageMime: bw.imageDataUrl ? bw.imageDataUrl.slice(5, bw.imageDataUrl.indexOf(';')) : undefined,

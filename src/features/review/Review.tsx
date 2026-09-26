@@ -141,6 +141,11 @@ export function Review() {
               <div className="flip-face back">
                 <span className="card-label">MEANING</span>
                 <p className="card-content">{sec1?.text || '—'}</p>
+                {current!.persianMeaning && (
+                  <p className="card-content persian-meaning" dir="rtl" lang="fa">
+                    {current!.persianMeaning}
+                  </p>
+                )}
                 {sec2?.text && (
                   <p className="card-content" style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>
                     “{sec2.text}”
