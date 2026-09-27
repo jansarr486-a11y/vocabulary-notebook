@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
 import { applyReviewResult, listWords } from '../../db/repo';
 import { reviewScore } from '../../db/schedule';
+import { quizSettingsOf, type QuizAnswerMode, type Word } from '../../db/models';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
-import type { Word } from '../../db/models';
+import { useObjectUrl } from '../../hooks/useMisc';
+import { buildQuizOptions, gradeQuizAnswer, makeRng, type BuiltQuiz, type QuizOption } from './quiz';
 
 function buildDeck(words: Word[], size: number): Word[] {
   const now = Date.now();
@@ -22,6 +24,21 @@ function buildDeck(words: Word[], size: number): Word[] {
   return scored.map((s) => s.w);
 }
 
+/** How many cards later an "Again" word comes back within the same session. */
+const RELEARN_GAP = 3;
+/** Auto-advance delay after a CORRECT answer; wrong answers wait for Next. */
+const AUTO_ADVANCE_MS = 1500;
+
+interface Tally {
+  again: number;
+  hard: number;
+  good: number;
+  easy: number;
+  hot: string[];
+}
+
+const EMPTY_TALLY: Tally = { again: 0, hard: 0, good: 0, easy: 0, hot: [] };
+
 export function Review() {
   const { profile } = useProfiles();
 
@@ -32,54 +49,158 @@ export function Review() {
 
   const [deck, setDeck] = useState<Word[] | null>(null);
   const [cursor, setCursor] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [tally, setTally] = useState({ easy: 0, hard: 0, hot: [] as string[] });
+  const [tally, setTally] = useState<Tally>(EMPTY_TALLY);
+  /** Some quizzes had fewer options — suggest adding words (in-session + summary). */
+  const [smallNotebook, setSmallNotebook] = useState(false);
+  /** Increments each time a card is presented — forces a fresh quiz build (relearning too). */
+  const [appearance, setAppearance] = useState(0);
+  /** One answer mode + timing thresholds per session, snapshotted at session start. */
+  const [sessionCfg, setSessionCfg] = useState<{
+    mode: QuizAnswerMode;
+    easyUnderMs: number;
+    goodUnderMs: number;
+  } | null>(null);
+
+  // ----- per-card quiz state -----
+  const [quiz, setQuiz] = useState<BuiltQuiz | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(0);
+  const advancedRef = useRef(false);
+  const wordsRef = useRef<Word[]>([]);
+
+  useEffect(() => {
+    if (words) wordsRef.current = words;
+  }, [words]);
+
+  const current = deck && cursor < deck.length ? deck[cursor] : undefined;
+  const finished = deck !== null && cursor >= deck.length;
+  const thumb = useObjectUrl(current?.imageBlob);
+
+  const cfg = sessionCfg ?? {
+    mode: (profile ? quizSettingsOf(profile.settings).answerMode : 'definition') as QuizAnswerMode,
+    easyUnderMs: profile ? quizSettingsOf(profile.settings).easyUnderMs : 4000,
+    goodUnderMs: profile ? quizSettingsOf(profile.settings).goodUnderMs : 10000,
+  };
 
   // Build the deck once data arrives; rebuild on profile switch.
   useEffect(() => {
     if (words && deck === null && profile) {
       setDeck(buildDeck(words, profile.settings.reviewDeckSize));
       setCursor(0);
-      setFlipped(false);
-      setTally({ easy: 0, hard: 0, hot: [] });
+      setTally(EMPTY_TALLY);
+      setSmallNotebook(false);
+      const qs = quizSettingsOf(profile.settings);
+      setSessionCfg({ mode: qs.answerMode, easyUnderMs: qs.easyUnderMs, goodUnderMs: qs.goodUnderMs });
+      setAppearance((a) => a + 1);
     }
   }, [words, deck, profile]);
 
-  const current = deck && cursor < deck.length ? deck[cursor] : undefined;
-  const finished = deck !== null && cursor >= deck.length;
-
-  const rate = async (rating: 'easy' | 'hard') => {
+  // Present the current card: fresh randomized options on every appearance,
+  // including relearning re-insertions of the same word.
+  useEffect(() => {
     if (!current) return;
-    await applyReviewResult(current.id!, rating);
+    advancedRef.current = false;
+    setPicked(null);
+    setElapsed(0);
+    const seed = (Date.now() % 2 ** 31) + appearance;
+    const built = buildQuizOptions(current, wordsRef.current, cfg.mode, makeRng(seed));
+    if (built === null) {
+      setQuiz(null);
+      // Nothing to quiz on (no definition/meaning) — skip quietly.
+      const t = window.setTimeout(() => {
+        setAppearance((a) => a + 1);
+        setCursor((c) => c + 1);
+      }, 0);
+      return () => window.clearTimeout(t);
+    }
+    setQuiz(built);
+    if (built.smallNotebook) setSmallNotebook(true);
+    startRef.current = Date.now();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appearance]);
+
+  const advance = () => {
+    advancedRef.current = true;
+    setAppearance((a) => a + 1);
+    setCursor((c) => c + 1);
+  };
+
+  // Auto-advance shortly after a correct answer; wrong answers wait for Next
+  // so the student can study the detail panel.
+  useEffect(() => {
+    if (picked === null) return;
+    const opt = quiz?.options.find((o) => o.key === picked);
+    if (!opt?.isCorrect) return;
+    const t = window.setTimeout(() => {
+      if (!advancedRef.current) advance();
+    }, AUTO_ADVANCE_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked, quiz]);
+
+  const answer = (opt: QuizOption) => {
+    if (picked !== null || !current || !quiz) return;
+    const ms = Date.now() - startRef.current;
+    const grade = gradeQuizAnswer(opt.isCorrect, ms, cfg);
+    setElapsed(ms);
+    setPicked(opt.key);
+    void applyReviewResult(current.id!, grade);
     setTally((t) => ({
       ...t,
-      [rating]: t[rating] + 1,
-      hot: rating === 'hard' ? [...t.hot, current.word] : t.hot,
+      [grade]: t[grade] + 1,
+      hot: grade === 'again' ? [...t.hot, current.word] : t.hot,
     }));
-    setFlipped(false);
-    window.setTimeout(() => setCursor((c) => c + 1), 120);
+    // Relearning: the same word returns a few cards later with brand-new options.
+    if (grade === 'again') {
+      setDeck((d) => {
+        if (!d) return d;
+        const next = [...d];
+        next.splice(Math.min(next.length, cursor + 1 + RELEARN_GAP), 0, current);
+        return next;
+      });
+    }
   };
 
   const restart = () => {
     if (!words || !profile) return;
     setDeck(buildDeck(words, profile.settings.reviewDeckSize));
     setCursor(0);
-    setFlipped(false);
-    setTally({ easy: 0, hard: 0, hot: [] });
+    setTally(EMPTY_TALLY);
+    setSmallNotebook(false);
+    const qs = quizSettingsOf(profile.settings);
+    setSessionCfg({ mode: qs.answerMode, easyUnderMs: qs.easyUnderMs, goodUnderMs: qs.goodUnderMs });
+    setAppearance((a) => a + 1);
   };
 
   const sec1 = current?.sections[0];
   const sec2 = current?.sections[1];
   const sec3 = current?.sections[2];
   const sec4 = current?.sections[3];
-  const hasAnyCompleted = useMemo(() => words?.some((w) => w.sections.some((s) => s.completedAt != null)) ?? false, [words]);
+  const hasAnyCompleted = useMemo(
+    () => words?.some((w) => w.sections.some((s) => s.completedAt != null)) ?? false,
+    [words],
+  );
+  const pickedOpt = quiz?.options.find((o) => o.key === picked);
+  const verdict = pickedOpt
+    ? pickedOpt.isCorrect
+      ? elapsed < cfg.easyUnderMs
+        ? 'Lightning fast! ⚡ Graded Easy'
+        : elapsed < cfg.goodUnderMs
+          ? 'Well done 👍 Graded Good'
+          : 'A bit slow — Graded Hard'
+      : 'Not quite — it comes back in a few cards 🔁'
+    : '';
 
   if (!profile) return null;
+  const mode = cfg.mode;
 
   return (
     <div className="review-wrap">
-      <h1>Flashcards</h1>
-      <p className="muted">Visit older words so they stick. Hard ones come back sooner.</p>
+      <h1>Review quiz</h1>
+      <p className="muted">
+        Pick the right meaning for each word — the quiz grades itself: wrong = again, fast = easy, slow = hard.
+      </p>
 
       {!hasAnyCompleted ? (
         <div className="empty-state" style={{ marginTop: 'var(--sp-5)' }}>
@@ -98,12 +219,18 @@ export function Review() {
         <div className="paper-card washi" style={{ marginTop: 'var(--sp-5)', textAlign: 'center' }}>
           <h2 style={{ fontSize: '2.2rem', marginBottom: 'var(--sp-3)' }}>Session done! 🎉</h2>
           <p>
-            Reviewed <strong>{tally.easy + tally.hard}</strong> card{(tally.easy + tally.hard) === 1 ? '' : 's'} —{' '}
-            {tally.easy} easy · {tally.hard} hard
+            Reviewed <strong>{tally.again + tally.hard + tally.good + tally.easy}</strong> card
+            {tally.again + tally.hard + tally.good + tally.easy === 1 ? '' : 's'} — {tally.easy} easy · {tally.good} good ·{' '}
+            {tally.hard} hard · {tally.again} again
           </p>
           {tally.hot.length > 0 && (
             <p className="muted" style={{ marginTop: 'var(--sp-2)' }}>
-              Tricky ones to watch: <strong>{tally.hot.join(', ')}</strong>
+              Tricky ones to watch: <strong>{[...new Set(tally.hot)].join(', ')}</strong>
+            </p>
+          )}
+          {smallNotebook && (
+            <p className="muted" style={{ marginTop: 'var(--sp-2)' }}>
+              📝 Some cards had fewer options — <Link to="/library">add more words</Link> for a richer quiz.
             </p>
           )}
           <div className="btn-row" style={{ justifyContent: 'center', marginTop: 'var(--sp-4)' }}>
@@ -120,65 +247,80 @@ export function Review() {
           <p className="review-counter" style={{ marginTop: 'var(--sp-4)' }}>
             Card {cursor + 1} / {deck.length}
           </p>
-          <div className="flip-scene">
-            <div
-              className={`flip-card ${flipped ? 'flipped' : ''}`}
-              onClick={() => setFlipped((f) => !f)}
-              role="button"
-              aria-pressed={flipped}
-              tabIndex={0}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setFlipped((f) => !f)}
-            >
-              <div className="flip-face front">
-                <span className="card-label">WORD</span>
-                <div className="card-word" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {current!.word}
-                </div>
-                {current!.phonetic && <span className="muted">{current!.phonetic}</span>}
-                {current!.partOfSpeech && <span className="faint" style={{ fontStyle: 'italic' }}>{current!.partOfSpeech}</span>}
-                <span className="card-hint">tap the card to flip 🔁</span>
-              </div>
-              <div className="flip-face back">
-                <span className="card-label">MEANING</span>
-                <p className="card-content">{sec1?.text || '—'}</p>
-                {current!.persianMeaning && (
-                  <p className="card-content persian-meaning" dir="rtl" lang="fa">
-                    {current!.persianMeaning}
-                  </p>
-                )}
-                {sec2?.text && (
-                  <p className="card-content" style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>
-                    “{sec2.text}”
-                  </p>
-                )}
-                {sec3?.completedAt != null && (
-                  <p className="card-content" style={{ fontSize: '0.9rem' }}>
-                    <strong>Your sentence:</strong> {sec3.text}
-                  </p>
-                )}
-                {sec4?.text && <p className="faint" style={{ fontSize: '0.85rem' }}>💡 {sec4.text}</p>}
-              </div>
+          <div className="quiz-card paper-card washi">
+            <span className="card-label">WHAT DOES IT MEAN?</span>
+            <div className="card-word" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {current!.word}
+              <SpeakerButton text={current!.word} small />
             </div>
-          </div>
+            {current!.phonetic && <span className="muted">{current!.phonetic}</span>}
+            {current!.partOfSpeech && (
+              <span className="faint" style={{ fontStyle: 'italic' }}>
+                {current!.partOfSpeech}
+              </span>
+            )}
+            {thumb && <img className="quiz-word-img" src={thumb} alt={`Illustration for ${current!.word}`} />}
 
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--sp-2)' }}>
-            <SpeakerButton text={current!.word} small />
-          </div>
+            {quiz && (
+              <div className="quiz-options">
+                {quiz.options.map((opt) => {
+                  const isPicked = picked === opt.key;
+                  const reveal = picked !== null;
+                  const stateClass = !reveal ? '' : opt.isCorrect ? 'correct' : isPicked ? 'wrong' : '';
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      className={`quiz-option ${stateClass}`}
+                      disabled={reveal}
+                      aria-pressed={isPicked}
+                      onClick={() => answer(opt)}
+                    >
+                      <span
+                        className="quiz-option-label"
+                        dir={mode === 'persian' ? 'rtl' : 'ltr'}
+                        lang={mode === 'persian' ? 'fa' : 'en'}
+                      >
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-          <div className="review-actions">
-            {flipped ? (
-              <>
-                <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => void rate('hard')}>
-                  😅 Hard
+            {picked !== null && quiz && (
+              <div className="quiz-feedback page-turn">
+                <p className={`quiz-verdict ${pickedOpt?.isCorrect ? 'ok' : 'no'}`}>{verdict}</p>
+                <div className="quiz-detail">
+                  {sec1?.text && (
+                    <p className="card-content">
+                      <span className="faint">Definition:</span> {sec1.text}
+                    </p>
+                  )}
+                  {current!.persianMeaning && (
+                    <p className="card-content persian-meaning" dir="rtl" lang="fa">
+                      {current!.persianMeaning}
+                    </p>
+                  )}
+                  {sec2?.text && (
+                    <p className="card-content" style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>
+                      “{sec2.text}”
+                    </p>
+                  )}
+                  {sec3?.completedAt != null && sec3?.text && (
+                    <p className="card-content" style={{ fontSize: '0.9rem' }}>
+                      <strong>Your sentence:</strong> {sec3.text}
+                    </p>
+                  )}
+                  {sec4?.text && (
+                    <p className="faint" style={{ fontSize: '0.85rem' }}>💡 {sec4.text}</p>
+                  )}
+                </div>
+                <button className="btn btn-primary" onClick={advance}>
+                  Next →
                 </button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => void rate('easy')}>
-                  😎 Easy
-                </button>
-              </>
-            ) : (
-              <button className="btn" style={{ flex: 1 }} onClick={() => setFlipped(true)}>
-                👀 Show meaning
-              </button>
+              </div>
             )}
           </div>
         </>

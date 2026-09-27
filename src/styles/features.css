@@ -596,6 +596,109 @@
   color: var(--ink-soft);
 }
 
+/* ---------- Review quiz (auto-graded multiple choice) ---------- */
+.quiz-card {
+  margin: var(--sp-4) auto;
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.quiz-card .card-word {
+  font-family: var(--font-hand);
+  font-size: 2.6rem;
+  font-weight: 700;
+}
+.quiz-word-img {
+  max-width: 100%;
+  max-height: 160px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+  width: 100%;
+  margin-top: var(--sp-2);
+}
+.quiz-option {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: var(--page);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--sp-3) var(--sp-4);
+  transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+.quiz-option:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.quiz-option:active:not(:disabled) {
+  transform: translateY(0);
+}
+.quiz-option:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+.quiz-option.correct {
+  background: var(--green-soft);
+  border-color: var(--green);
+  color: var(--green);
+  opacity: 1;
+}
+.quiz-option.wrong {
+  background: var(--red-soft);
+  border-color: var(--red);
+  color: var(--red);
+  opacity: 1;
+}
+.quiz-option-label {
+  display: block;
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+.quiz-feedback {
+  width: 100%;
+  border-top: 2px dashed var(--line);
+  padding-top: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  text-align: left;
+}
+.quiz-verdict {
+  font-weight: 700;
+  text-align: center;
+}
+.quiz-verdict.ok {
+  color: var(--green);
+}
+.quiz-verdict.no {
+  color: var(--red);
+}
+.quiz-detail {
+  background: var(--paper-deep);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.session-notes {
+  list-style: disc;
+  padding-left: var(--sp-5);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
 /* ---------- Spelling Puzzle ---------- */
 .spelling-wrap {
   max-width: 640px;

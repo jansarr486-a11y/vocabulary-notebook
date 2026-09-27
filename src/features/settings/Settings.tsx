@@ -7,7 +7,7 @@ import { deleteProfile, updateSettings, updateProfile, importBackup } from '../.
 import { hashPin, verifyPin } from '../../db/pin';
 import { exportPdf, downloadJsonBackup, buildProgressSummary, shareOrCopySummary } from '../exports/exporters';
 import { loadSamplePack } from './sampleData';
-import type { BackupEnvelope } from '../../db/models';
+import { DEFAULT_QUIZ_SETTINGS, type BackupEnvelope, type QuizAnswerMode } from '../../db/models';
 
 const ACCENTS = ['#c96f4a', '#d9a13c', '#7fa05f', '#8c5f9d', '#4a7bb5', '#c95f7f'];
 
@@ -20,6 +20,9 @@ export function Settings() {
   const [s3, setS3] = useState(s?.intervals.s3 ?? 4);
   const [dailyGoal, setDailyGoal] = useState(s?.dailyGoal ?? 3);
   const [deckSize, setDeckSize] = useState(s?.reviewDeckSize ?? 10);
+  const [answerMode, setAnswerMode] = useState<QuizAnswerMode>(s?.quiz?.answerMode ?? DEFAULT_QUIZ_SETTINGS.answerMode);
+  const [easyUnderSec, setEasyUnderSec] = useState(Math.round((s?.quiz?.easyUnderMs ?? DEFAULT_QUIZ_SETTINGS.easyUnderMs) / 1000));
+  const [goodUnderSec, setGoodUnderSec] = useState(Math.round((s?.quiz?.goodUnderMs ?? DEFAULT_QUIZ_SETTINGS.goodUnderMs) / 1000));
 
   const [name, setName] = useState(profile?.name ?? '');
   const [accent, setAccent] = useState(profile?.accentColor ?? ACCENTS[0]);
@@ -37,11 +40,14 @@ export function Settings() {
   const pid = profile.id!;
 
   const saveSchedule = async () => {
+    const easyMs = Math.max(1, easyUnderSec) * 1000;
+    const goodMs = Math.max(easyMs + 1000, goodUnderSec * 1000);
     await updateSettings(pid, {
       ...profile.settings,
       intervals: { s1: 0, s2, s3, s4: null },
       dailyGoal,
       reviewDeckSize: deckSize,
+      quiz: { answerMode, easyUnderMs: easyMs, goodUnderMs: goodMs },
     });
     await refresh();
     toast('Schedule saved ✅');
@@ -213,6 +219,69 @@ export function Settings() {
             <span className="range-val">{deckSize}</span>
           </div>
         </div>
+        <div style={{ marginTop: 'var(--sp-4)' }}>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink-soft)' }}>Quiz answer mode</label>
+          <p className="faint" style={{ fontSize: '0.78rem', marginBottom: 'var(--sp-2)' }}>
+            What the multiple-choice options show during review quizzes. One mode per session.
+          </p>
+          <div className="chip-row">
+            <button
+              type="button"
+              className={`chip ${answerMode === 'definition' ? 'chip-on' : ''}`}
+              onClick={() => setAnswerMode('definition')}
+            >
+              🇬🇧 English definitions
+            </button>
+            <button
+              type="button"
+              className={`chip ${answerMode === 'persian' ? 'chip-on' : ''}`}
+              onClick={() => setAnswerMode('persian')}
+            >
+              🇮🇷 Persian meanings
+            </button>
+          </div>
+        </div>
+        <details style={{ marginTop: 'var(--sp-3)' }}>
+          <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>
+            Advanced: quiz timing thresholds
+          </summary>
+          <div className="intervals-grid" style={{ marginTop: 'var(--sp-2)' }}>
+            <div className="interval-item">
+              <label htmlFor="quiz-easy">Fast answer (Easy) under</label>
+              <div className="range-row">
+                <input
+                  id="quiz-easy"
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={easyUnderSec}
+                  onChange={(e) => setEasyUnderSec(Math.max(1, Number(e.target.value)))}
+                />
+                <span className="range-val">sec</span>
+              </div>
+            </div>
+            <div className="interval-item">
+              <label htmlFor="quiz-good">Normal answer (Good) under</label>
+              <div className="range-row">
+                <input
+                  id="quiz-good"
+                  className="input"
+                  type="number"
+                  min={2}
+                  max={60}
+                  value={goodUnderSec}
+                  onChange={(e) => setGoodUnderSec(Math.max(2, Number(e.target.value)))}
+                />
+                <span className="range-val">sec</span>
+              </div>
+            </div>
+          </div>
+          <p className="faint" style={{ fontSize: '0.78rem' }}>
+            Correct answers slower than the normal threshold grade as Hard (hesitated or guessed). Wrong answers
+            always grade as Again. Applies to new review sessions.
+          </p>
+        </details>
         <div className="btn-row" style={{ marginTop: 'var(--sp-4)' }}>
           <button className="btn btn-primary" onClick={() => void saveSchedule()}>
             Save schedule

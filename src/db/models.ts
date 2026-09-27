@@ -43,12 +43,44 @@ export interface ScheduleIntervals {
   s4: number | null;
 }
 
+/**
+ * The four possible outcomes of one review card. In the auto-graded quiz these
+ * are derived from quiz performance (wrong answer, slow/hesitant answer,
+ * normal answer, instant answer) instead of student self-report.
+ */
+export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy';
+
+/** What the multiple-choice answer options display. */
+export type QuizAnswerMode = 'definition' | 'persian';
+
+/** Recognition-quiz preferences (auto-graded review). */
+export interface QuizSettings {
+  answerMode: QuizAnswerMode;
+  /** Correct answers faster than this many ms grade as Easy. */
+  easyUnderMs: number;
+  /** Correct answers faster than this many ms (but ≥ easyUnderMs) grade as Good; slower grades as Hard. */
+  goodUnderMs: number;
+}
+
+export const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
+  answerMode: 'definition',
+  easyUnderMs: 4_000,
+  goodUnderMs: 10_000,
+};
+
+/** Quiz settings with defaults filled in (rows saved before quizzes existed). */
+export function quizSettingsOf(s: ProfileSettings | undefined): QuizSettings {
+  return { ...DEFAULT_QUIZ_SETTINGS, ...(s?.quiz ?? {}) };
+}
+
 export interface ProfileSettings {
   intervals: ScheduleIntervals;
   /** Sections-per-day target for the progress bar. */
   dailyGoal: number;
   /** How many cards a review session serves. */
   reviewDeckSize: number;
+  /** Added in v1.2 — absent on profiles created before the auto-graded quiz. */
+  quiz?: QuizSettings;
 }
 
 export interface ProfileStats {
@@ -156,7 +188,12 @@ export interface BackupEnvelope {
 export const DEFAULT_INTERVALS: ScheduleIntervals = { s1: 0, s2: 2, s3: 4, s4: null };
 
 export function defaultSettings(): ProfileSettings {
-  return { intervals: { ...DEFAULT_INTERVALS }, dailyGoal: 3, reviewDeckSize: 10 };
+  return {
+    intervals: { ...DEFAULT_INTERVALS },
+    dailyGoal: 3,
+    reviewDeckSize: 10,
+    quiz: { ...DEFAULT_QUIZ_SETTINGS },
+  };
 }
 
 export function emptyProfileStats(): ProfileStats {

@@ -96,17 +96,52 @@ export function reviewScore(review: { lastReviewedAt?: number; weight: number; p
   return review.pressure + review.weight * Math.log(1 + Math.max(0, days));
 }
 
-/** New review state after a card was rated. */
+/**
+ * New review state after a card was graded.
+ *
+ * The scheduler is deliberately light (no full SM-2): each grade moves the
+ * word's `weight` — the pressure multiplier that decides how soon the card
+ * resurfaces — while the existing easy/hard behaviour is kept exactly as
+ * before and the two new middle grades interpolate between them:
+ *   again → weight ×2.2 (soonest return) · hard → ×1.6 (previous "Hard")
+ *   good  → weight ×1.0 · easy → ×0.75 (previous "Easy", clamped ≥ 0.5)
+ */
 export function applyReviewRating(
   review: { lastReviewedAt?: number; weight: number; pressure: number },
-  rating: 'easy' | 'hard',
+  rating: 'easy' | 'hard' | 'again' | 'good',
   now: number,
 ): { lastReviewedAt: number; weight: number; pressure: number } {
+  if (rating === 'again') {
+    return {
+      lastReviewedAt: now,
+      weight: Math.min(4, review.weight * 2.2),
+      pressure: 0,
+    };
+  }
+  if (rating === 'good') {
+    return { lastReviewedAt: now, weight: review.weight, pressure: 0 };
+  }
   return {
     lastReviewedAt: now,
     weight: rating === 'hard' ? Math.min(4, review.weight * 1.6) : Math.max(0.5, review.weight * 0.75),
     pressure: 0,
   };
+}
+
+/**
+ * Automatic grade for one quiz answer: correctness decides Again-vs-pass,
+ * answer speed splits passes into Easy / Good / Hard.
+ * Thresholds come from the profile's quiz settings (defaults 4s / 10s).
+ */
+export function gradeFromQuizAnswer(
+  correct: boolean,
+  elapsedMs: number,
+  thresholds: { easyUnderMs: number; goodUnderMs: number },
+): 'again' | 'hard' | 'good' | 'easy' {
+  if (!correct) return 'again';
+  if (elapsedMs < thresholds.easyUnderMs) return 'easy';
+  if (elapsedMs < thresholds.goodUnderMs) return 'good';
+  return 'hard';
 }
 
 /**

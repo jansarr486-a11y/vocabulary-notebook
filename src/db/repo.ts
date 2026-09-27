@@ -16,6 +16,7 @@ import {
   type WordSpelling,
 } from './models';
 import type { LibraryWord } from '../features/library/libraryData';
+import type { ReviewGrade } from './models';
 import { applyReviewRating, intervalFor, recordActivity } from './schedule';
 import { bumpDifficulty, decayDifficulty } from './spelling';
 import { hashPin } from './pin';
@@ -265,7 +266,7 @@ export async function uncompleteSection(wordId: number, index: 1 | 2 | 3 | 4): P
 
 export async function applyReviewResult(
   wordId: number,
-  rating: 'easy' | 'hard',
+  rating: ReviewGrade,
   now = Date.now(),
 ): Promise<void> {
   const w = await db.words.get(wordId);
