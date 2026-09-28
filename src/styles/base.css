@@ -90,9 +90,10 @@ a {
 .app-main {
   flex: 1;
   width: 100%;
-  /* Constrained reading width: list rows keep labels near their words instead
-     of stretching label-to-edge on desktop. */
-  max-width: 840px;
+  /* Fluid desktop width: uses the window on laptops, still capped so ultra-wide
+     screens don't stretch text edge-to-edge. Reading-focused pages (word card,
+     review) cap themselves narrower. */
+  max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--sp-5) var(--sp-4) 96px; /* bottom room for the FAB */
 }

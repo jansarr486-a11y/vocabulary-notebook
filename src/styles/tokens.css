@@ -77,5 +77,6 @@
   --sp-6: 32px;
   --sp-7: 48px;
 
+  --content-max: 1200px; /* desktop shell width — the header aligns with it */
   --tap: 44px; /* minimum touch target for younger students */
 }
