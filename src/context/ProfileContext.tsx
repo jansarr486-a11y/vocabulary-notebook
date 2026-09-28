@@ -13,7 +13,7 @@ interface ProfileContextValue {
   /** Enter a profile (assumes PIN already handled by caller if set). */
   activate: (id: number) => Promise<void>;
   signOut: () => Promise<void>;
-  createNew: (name: string, accent: string, pin?: string) => Promise<Profile>;
+  createNew: (name: string, accent: string, pin?: string, avatar?: { blob: Blob; mime: string }) => Promise<Profile>;
   refresh: () => Promise<void>;
 }
 
@@ -74,8 +74,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createNew = useCallback(
-    async (name: string, accent: string, pin?: string) => {
-      const p = await createProfile(name, accent, pin);
+    async (name: string, accent: string, pin?: string, avatar?: { blob: Blob; mime: string }) => {
+      const p = await createProfile(name, accent, pin, undefined, avatar);
       await load();
       await activate(p.id!);
       return p;

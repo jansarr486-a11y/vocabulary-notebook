@@ -1,4 +1,5 @@
 import { LEVEL_TAG_STYLES, LEVEL_TAGS, type LevelTag } from '../../db/models';
+import { IconMastered } from './icons';
 
 export function LevelChips({
   selected,
@@ -46,8 +47,42 @@ const STATE_CLASS: Record<string, string> = {
   optional: 'dot-optional',
 };
 
+/**
+ * Learning-state indicator.
+ *
+ * One consistent semantic system across the whole app:
+ *   green ✓ = completed / mastered
+ *   amber ● = in progress / due now
+ *   red   ! = overdue / needs attention
+ *   gray  ○ = not started (locked)
+ *
+ * The glyph is drawn with pseudo-elements (no DOM change) so existing layouts
+ * keep working; a tooltip gives the plain-language meaning on hover.
+ */
+const DOT_GLYPH: Record<string, string> = {
+  overdue: '!',
+  due: '',
+  done: '✓',
+  locked: '',
+  optional: '',
+};
+const DOT_TITLE: Record<string, string> = {
+  overdue: 'Overdue — needs attention',
+  due: 'Due today',
+  done: 'Completed',
+  locked: 'Not started yet',
+  optional: 'Optional',
+};
+
 export function StateDot({ state }: { state: string }) {
-  return <span className={`dot ${STATE_CLASS[state] ?? 'dot-locked'}`} aria-hidden />;
+  return (
+    <span
+      className={`dot ${STATE_CLASS[state] ?? 'dot-locked'}`}
+      data-glyph={DOT_GLYPH[state] ?? ''}
+      title={DOT_TITLE[state] ?? state}
+      aria-label={DOT_TITLE[state] ?? state}
+    />
+  );
 }
 
 const BADGE_LABEL: Record<string, string> = {
@@ -59,5 +94,10 @@ const BADGE_LABEL: Record<string, string> = {
 };
 
 export function StateBadge({ state }: { state: string }) {
-  return <span className={`badge-state badge-${state}`}>{BADGE_LABEL[state] ?? state}</span>;
+  return (
+    <span className={`badge-state badge-${state}`}>
+      {state === 'done' && <IconMastered className="badge-icon" />}
+      {BADGE_LABEL[state] ?? state}
+    </span>
+  );
 }

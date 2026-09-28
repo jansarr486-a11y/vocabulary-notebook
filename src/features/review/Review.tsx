@@ -217,7 +217,7 @@ export function Review() {
         </p>
       ) : finished ? (
         <div className="paper-card washi" style={{ marginTop: 'var(--sp-5)', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2.2rem', marginBottom: 'var(--sp-3)' }}>Session done! 🎉</h2>
+          <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-3)' }}>Session done! 🎉</h2>
           <p>
             Reviewed <strong>{tally.again + tally.hard + tally.good + tally.easy}</strong> card
             {tally.again + tally.hard + tally.good + tally.easy === 1 ? '' : 's'} — {tally.easy} easy · {tally.good} good ·{' '}

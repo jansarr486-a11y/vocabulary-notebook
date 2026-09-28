@@ -113,19 +113,48 @@ button.chip:hover {
   box-shadow: 1.5px 1.5px 0 rgba(59, 49, 40, 0.3);
 }
 
-/* due-state dots & badges */
+/* due-state dots & badges — semantic learning states:
+   green = done · amber = due · red = overdue · gray = not started.
+   The glyph is drawn on ::after so the DOM stays a single span. */
 .dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   flex-shrink: 0;
+  position: relative;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: default;
 }
-.dot-overdue { background: var(--red); }
-.dot-due { background: var(--yellow); }
-.dot-done { background: var(--green); }
-.dot-locked { background: var(--line); }
-.dot-optional { background: transparent; border: 2px dashed var(--ink-faint); }
+.dot::after {
+  content: attr(data-glyph);
+}
+.dot-overdue {
+  background: var(--red-soft);
+  border: 1.5px solid var(--red);
+  color: var(--red);
+}
+.dot-due {
+  background: var(--yellow-soft);
+  border: 1.5px solid var(--yellow);
+}
+.dot-done {
+  background: var(--green);
+  border: 1.5px solid var(--green);
+  color: #fff;
+}
+.dot-locked {
+  background: transparent;
+  border: 1.5px solid var(--line);
+}
+.dot-optional {
+  background: transparent;
+  border: 1.5px dashed var(--ink-faint);
+}
 
 .badge-state {
   display: inline-flex;
@@ -135,6 +164,12 @@ button.chip:hover {
   font-weight: 700;
   padding: 1px 8px;
   border-radius: 999px;
+  font-family: var(--font-body);
+}
+.badge-state .badge-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .badge-overdue { background: var(--red-soft); color: var(--red); }
 .badge-due { background: var(--yellow-soft); color: #8a6420; }
@@ -175,6 +210,24 @@ button.chip:hover {
   resize: vertical;
   min-height: 74px;
   line-height: 1.5;
+}
+
+/* ---------- Notebook search ---------- */
+.search-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.search-box .input {
+  padding-left: 40px;
+}
+.search-box-icon {
+  position: absolute;
+  left: 12px;
+  width: 19px;
+  height: 19px;
+  color: var(--ink-soft);
+  pointer-events: none;
 }
 
 /* ---------- Cards & pages ---------- */
@@ -256,7 +309,7 @@ button.chip:hover {
 
 /* ---------- Progress bar ---------- */
 .progress-track {
-  height: 14px;
+  height: 16px;
   background: var(--paper-deep);
   border: 1.5px solid var(--line);
   border-radius: 999px;
@@ -264,7 +317,7 @@ button.chip:hover {
 }
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+  background: var(--accent);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
@@ -326,6 +379,37 @@ button.chip:hover {
 }
 .fab:hover {
   transform: rotate(90deg) scale(1.05);
+}
+.fab svg {
+  width: 30px;
+  height: 30px;
+}
+/* “Add word” callout on hover/focus — labels the circular button without
+   cluttering the screen at rest. */
+.fab::after {
+  content: 'Add word';
+  position: absolute;
+  right: calc(100% + 10px);
+  white-space: nowrap;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  padding: 4px 12px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+.fab:hover::after,
+.fab:focus-visible::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+.fab:hover {
+  transform: scale(1.05);
 }
 
 /* ---------- Animations ---------- */

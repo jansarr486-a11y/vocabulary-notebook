@@ -6,6 +6,7 @@ import { listWords } from '../../db/repo';
 import { todayProgress, wordSectionStatuses } from '../../db/schedule';
 import { StateDot } from '../../components/ui/Chips';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
+import { IconStreak, IconAddWord } from '../../components/ui/icons';
 import type { Word } from '../../db/models';
 
 const SECTION_SHORT = ['Definition', 'Example', 'Own sentence', 'Note'];
@@ -76,7 +77,7 @@ export function Dashboard() {
           </p>
         </div>
         <span className="streak-pill" title="Days in a row with at least one section completed">
-          🔥 {profile.stats.streakCount} day{profile.stats.streakCount === 1 ? '' : 's'}
+          <IconStreak /> {profile.stats.streakCount} day{profile.stats.streakCount === 1 ? '' : 's'} streak
         </span>
       </div>
 
@@ -91,8 +92,8 @@ export function Dashboard() {
         >
           <div className="progress-fill" style={{ width: `${pct}%` }} />
         </div>
-        <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
-          {doneToday}/{progress.goal} today {pct >= 100 ? '🌟' : ''}
+        <span className="dash-progress-label" style={{ whiteSpace: 'nowrap' }}>
+          {doneToday} of {progress.goal} sessions {pct >= 100 ? '· goal met 🌟' : ''}
         </span>
       </div>
 
@@ -117,7 +118,7 @@ export function Dashboard() {
               <button className="due-word-head" onClick={() => navigate(`/word/${g.word.id}`)}>
                 <span className="word">{g.word.word}</span>
                 <SpeakerButton text={g.word.word} small />
-                <span className="faint" style={{ marginLeft: 'auto', fontSize: '0.8rem' }}>
+                <span className="due-count faint">
                   {g.word.levelTags.length > 0 ? g.word.levelTags.join(' · ') : ''}
                 </span>
               </button>
@@ -132,8 +133,12 @@ export function Dashboard() {
                     <span className="sec-name">
                       {item.index}. {SECTION_SHORT[item.index - 1]}
                     </span>
-                    <span className="sec-note">
-                      {item.state === 'overdue' ? `${item.overdueDays} day${item.overdueDays === 1 ? '' : 's'} late` : 'due today'}
+                    <span className={`sec-note ${item.state}`}>
+                      {item.state === 'overdue'
+                        ? item.overdueDays > 0
+                          ? `${item.overdueDays} day${item.overdueDays === 1 ? '' : 's'} overdue`
+                          : 'overdue'
+                        : 'due today'}
                     </span>
                   </button>
                 ))}
@@ -144,7 +149,7 @@ export function Dashboard() {
       )}
 
       <Link to="/notebook" className="fab" aria-label="Add a word" title="Add a word">
-        ＋
+        <IconAddWord />
       </Link>
     </div>
   );

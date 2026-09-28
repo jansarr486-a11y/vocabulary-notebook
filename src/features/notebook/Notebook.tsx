@@ -10,6 +10,7 @@ import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { WordFormModal } from './WordFormModal';
 import { useObjectUrl } from '../../hooks/useMisc';
 import { useToast } from '../../components/ui/ToastProvider';
+import { IconSearch, IconAddWord } from '../../components/ui/icons';
 import type { Word } from '../../db/models';
 
 function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2: number; s3: number; s4: number | null } }) {
@@ -25,16 +26,16 @@ function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2
         {word.word}
         <SpeakerButton text={word.word} small />
       </span>
-      <span className="pos">
-        {word.partOfSpeech ? `${word.partOfSpeech} · ` : ''}
-        added {new Date(word.dateAdded).toLocaleDateString()}
+      <span className="meta">
+        {word.partOfSpeech && <span className="pos">{word.partOfSpeech}</span>}
+        {word.levelTags.length > 0 && <span className="lvl">{word.levelTags.join(' · ')}</span>}
       </span>
       {word.persianMeaning && (
         <span className="persian-meaning" dir="rtl" lang="fa">
           {word.persianMeaning}
         </span>
       )}
-      <div className="dots">
+      <div className="dots" role="img" aria-label={`${doneCount} of 4 sections completed`}>
         {statuses.map((s) => (
           <StateDot key={s.index} state={s.state} />
         ))}
@@ -43,7 +44,8 @@ function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2
         <i style={{ width: `${(doneCount / 4) * 100}%` }} />
       </div>
       <span className="count">
-        {doneCount}/4 sections {word.levelTags.length > 0 && `· ${word.levelTags.join(', ')}`}
+        {doneCount}/4 sections
+        <span className="count-date">added {new Date(word.dateAdded).toLocaleDateString()}</span>
       </span>
     </Link>
   );
@@ -85,14 +87,17 @@ export function Notebook() {
     <div>
       <div className="notebook-head">
         <h1>My Notebook</h1>
-        <input
-          className="input"
-          style={{ maxWidth: 260 }}
-          placeholder="🔍 Search words…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search words"
-        />
+        <div className="search-box">
+          <IconSearch className="search-box-icon" />
+          <input
+            className="input"
+            style={{ maxWidth: 260 }}
+            placeholder="Search words…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search words"
+          />
+        </div>
       </div>
 
       <div className="chip-row" style={{ marginBottom: 'var(--sp-4)' }}>
@@ -130,7 +135,7 @@ export function Notebook() {
       )}
 
       <button className="fab" onClick={() => setAdding(true)} aria-label="Add a word" title="Add a word">
-        ＋
+        <IconAddWord />
       </button>
 
       {adding && <WordFormModal onClose={() => setAdding(false)} onSubmit={submitNew} />}

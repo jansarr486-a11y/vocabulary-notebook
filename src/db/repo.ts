@@ -39,6 +39,7 @@ export async function createProfile(
   accentColor: string,
   pin?: string,
   settings?: ProfileSettings,
+  avatar?: { blob: Blob; mime: string },
 ): Promise<Profile> {
   const pinData = pin ? await hashPin(pin) : undefined;
   const profile: Profile = {
@@ -49,6 +50,8 @@ export async function createProfile(
     createdAt: Date.now(),
     settings: settings ?? defaultSettings(),
     stats: emptyProfileStats(),
+    avatarBlob: avatar?.blob,
+    avatarMime: avatar?.mime,
     schemaVersion: 1,
   };
   profile.id = await db.profiles.add(profile);
@@ -330,6 +333,17 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
+/** Replace (or remove) a profile's picture. Pass undefined to clear it. */
+export async function updateProfileAvatar(
+  id: number,
+  avatar?: { blob: Blob; mime: string },
+): Promise<void> {
+  await db.profiles.update(id, {
+    avatarBlob: avatar?.blob,
+    avatarMime: avatar?.mime,
+  });
+}
+
 export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
   const words = await listWords(profile.id!);
   const backupWords: BackupWord[] = [];
@@ -358,6 +372,7 @@ export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
       settings: profile.settings,
       stats: profile.stats,
       accentColor: profile.accentColor,
+      avatarDataUrl: profile.avatarBlob ? await blobToDataUrl(profile.avatarBlob) : undefined,
     },
     words: backupWords,
   };
@@ -387,6 +402,13 @@ export async function importBackup(
   if (options.mode === 'replace') {
     // "replace" means: restore the profile stats/streak snapshot as-is
     await db.profiles.update(pid, { stats: envelope.profile.stats });
+  }
+  if (envelope.profile.avatarDataUrl) {
+    const blob = await dataUrlToBlob(envelope.profile.avatarDataUrl);
+    await db.profiles.update(pid, {
+      avatarBlob: blob,
+      avatarMime: envelope.profile.avatarDataUrl.slice(5, envelope.profile.avatarDataUrl.indexOf(';')),
+    });
   }
   for (const bw of envelope.words) {
     const word: Word = {

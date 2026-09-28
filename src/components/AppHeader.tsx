@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useProfiles } from '../context/ProfileContext';
-import { useOnline } from '../hooks/useMisc';
+import { useOnline, useObjectUrl } from '../hooks/useMisc';
+import { IconToday, IconNotebook, IconLibrary, IconReview, IconSpelling, IconSettings, IconLogo } from './ui/icons';
 
 export function AppHeader() {
   const { profile, signOut } = useProfiles();
@@ -8,32 +9,33 @@ export function AppHeader() {
   const navigate = useNavigate();
 
   const initial = (profile?.name ?? '?').trim().charAt(0).toUpperCase();
+  const avatarUrl = useObjectUrl(profile?.avatarBlob);
 
   return (
     <header className="app-header">
       <div className="app-header-inner">
         <NavLink to="/" className="app-logo">
-          <img src="./favicon.svg" alt="" />
+          <IconLogo />
           <span>Vocabulary Notebook</span>
         </NavLink>
         <nav className="app-nav" aria-label="Main">
           <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            📌 <span className="nav-label">Today</span>
+            <IconToday /> <span className="nav-label">Today</span>
           </NavLink>
           <NavLink to="/notebook" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            📓 <span className="nav-label">Notebook</span>
+            <IconNotebook /> <span className="nav-label">Notebook</span>
           </NavLink>
           <NavLink to="/library" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            📚 <span className="nav-label">Library</span>
+            <IconLibrary /> <span className="nav-label">Library</span>
           </NavLink>
           <NavLink to="/review" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            🔁 <span className="nav-label">Review</span>
+            <IconReview /> <span className="nav-label">Review</span>
           </NavLink>
           <NavLink to="/spelling" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            🧩 <span className="nav-label">Spelling</span>
+            <IconSpelling /> <span className="nav-label">Spelling</span>
           </NavLink>
           <NavLink to="/settings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            ⚙️ <span className="nav-label">Settings</span>
+            <IconSettings /> <span className="nav-label">Settings</span>
           </NavLink>
           <button
             className="avatar-btn"
@@ -45,7 +47,7 @@ export function AppHeader() {
               navigate('/');
             }}
           >
-            {initial}
+            {avatarUrl ? <img src={avatarUrl} alt="" /> : initial}
           </button>
         </nav>
       </div>

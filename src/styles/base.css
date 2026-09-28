@@ -27,14 +27,27 @@ body {
   line-height: 1.55;
 }
 
+/* Functional headings use the clean sans — the script font is reserved for the
+   brand, vocabulary words, and decorative moments (kept per-element). */
 h1,
 h2,
 h3 {
-  font-family: var(--font-hand);
+  font-family: var(--font-body);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   margin: 0;
   color: var(--ink);
+}
+
+h1 {
+  font-size: 1.8rem;
+}
+h2 {
+  font-size: 1.4rem;
+}
+h3 {
+  font-size: 1.15rem;
 }
 
 p {
@@ -77,7 +90,9 @@ a {
 .app-main {
   flex: 1;
   width: 100%;
-  max-width: 1060px;
+  /* Constrained reading width: list rows keep labels near their words instead
+     of stretching label-to-edge on desktop. */
+  max-width: 840px;
   margin: 0 auto;
   padding: var(--sp-5) var(--sp-4) 96px; /* bottom room for the FAB */
 }

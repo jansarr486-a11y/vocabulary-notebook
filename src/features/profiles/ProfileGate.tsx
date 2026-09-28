@@ -2,10 +2,22 @@ import { useRef, useState } from 'react';
 import { useProfiles } from '../../context/ProfileContext';
 import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../components/ui/ToastProvider';
+import { AvatarPicker } from '../../components/ui/AvatarPicker';
+import { useObjectUrl } from '../../hooks/useMisc';
 import { importBackup } from '../../db/repo';
-import type { BackupEnvelope } from '../../db/models';
+import type { BackupEnvelope, Profile } from '../../db/models';
 
 const ACCENTS = ['#c96f4a', '#d9a13c', '#7fa05f', '#8c5f9d', '#4a7bb5', '#c95f7f'];
+
+/** Gate tile avatar: the profile picture when set, otherwise the accent initial. */
+function TileAvatar({ profile }: { profile: Profile }) {
+  const url = useObjectUrl(profile.avatarBlob);
+  return (
+    <span className="avatar-btn" style={{ background: url ? 'var(--paper-deep)' : profile.accentColor }}>
+      {url ? <img src={url} alt="" /> : profile.name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
 
 export function ProfileGate() {
   const { profiles, choose, createNew, refresh, activate } = useProfiles();
@@ -15,6 +27,7 @@ export function ProfileGate() {
   const [accent, setAccent] = useState(ACCENTS[0]);
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
+  const [avatar, setAvatar] = useState<{ blob: Blob; mime: string } | undefined>(undefined);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const submitCreate = async () => {
@@ -25,7 +38,7 @@ export function ProfileGate() {
     }
     setBusy(true);
     try {
-      await createNew(name, accent, pin || undefined);
+      await createNew(name, accent, pin || undefined, avatar);
     } finally {
       setBusy(false);
     }
@@ -57,9 +70,7 @@ export function ProfileGate() {
         <div className="profile-list">
           {profiles.map((p) => (
             <button key={p.id} className="profile-tile" onClick={() => choose(p.id!)}>
-              <span className="avatar-btn" style={{ background: p.accentColor }}>
-                {p.name.trim().charAt(0).toUpperCase()}
-              </span>
+              <TileAvatar profile={p} />
               <span>
                 <span className="name">{p.name}</span>
                 <br />
@@ -109,18 +120,22 @@ export function ProfileGate() {
             </>
           }
         >
-          <div className="field">
-            <label htmlFor="gate-name">Display name</label>
-            <input
-              id="gate-name"
-              className="input"
-              placeholder="e.g. Amina"
-              value={name}
-              autoFocus
-              maxLength={40}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void submitCreate()}
-            />
+          <div className="profile-edit-row">
+            <AvatarPicker accent={accent} name={name || '?'} onChange={setAvatar} size={84} />
+            <div className="profile-edit-fields" style={{ flex: 1 }}>
+              <div className="field">
+                <label htmlFor="gate-name">Display name</label>
+                <input
+                  id="gate-name"
+                  className="input"
+                  placeholder="e.g. Amina"
+                  value={name}
+                  maxLength={40}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && void submitCreate()}
+                />
+              </div>
+            </div>
           </div>
           <div className="field">
             <label>Notebook colour</label>

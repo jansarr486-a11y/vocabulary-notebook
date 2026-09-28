@@ -293,7 +293,7 @@ function Summary({ rows, onRestart }: { rows: SummaryRow[]; onRestart: () => voi
 
   return (
     <div className="paper-card washi" style={{ textAlign: 'center', padding: 'var(--sp-6) var(--sp-5)' }}>
-      <h2 style={{ fontSize: '2.2rem', marginBottom: 'var(--sp-2)' }}>Session done! 🧩</h2>
+      <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-2)' }}>Session done! 🧩</h2>
       <p className="muted" style={{ marginBottom: 'var(--sp-4)' }}>
         {rows.length} word{rows.length === 1 ? '' : 's'} attempted · <strong>{perfect}</strong> first-try ·{' '}
         <strong>{retried}</strong> needed retries

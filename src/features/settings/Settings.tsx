@@ -3,7 +3,8 @@ import { useProfiles } from '../../context/ProfileContext';
 import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../components/ui/ToastProvider';
 import { PinPad } from '../../components/ui/PinPad';
-import { deleteProfile, updateSettings, updateProfile, importBackup } from '../../db/repo';
+import { AvatarPicker } from '../../components/ui/AvatarPicker';
+import { deleteProfile, updateSettings, updateProfile, updateProfileAvatar, importBackup } from '../../db/repo';
 import { hashPin, verifyPin } from '../../db/pin';
 import { exportPdf, downloadJsonBackup, buildProgressSummary, shareOrCopySummary } from '../exports/exporters';
 import { loadSamplePack } from './sampleData';
@@ -26,6 +27,9 @@ export function Settings() {
 
   const [name, setName] = useState(profile?.name ?? '');
   const [accent, setAccent] = useState(profile?.accentColor ?? ACCENTS[0]);
+  /** Pending avatar pick — applied on "Save profile" like the other identity fields. */
+  const [avatar, setAvatar] = useState<{ blob: Blob; mime: string } | undefined>(undefined);
+  const [avatarDirty, setAvatarDirty] = useState(false);
 
   const [pinStep, setPinStep] = useState<'idle' | 'old' | 'new' | 'new2'>('idle');
   const pendingPin = useRef('');
@@ -56,6 +60,7 @@ export function Settings() {
   const saveIdentity = async () => {
     if (!name.trim()) return;
     await updateProfile(pid, { name: name.trim(), accentColor: accent });
+    if (avatarDirty) await updateProfileAvatar(pid, avatar);
     await refresh();
     toast('Profile updated ✏️');
   };
@@ -295,29 +300,43 @@ export function Settings() {
       {/* ---------- Profile ---------- */}
       <section className="settings-group paper-card">
         <h2>👤 My profile</h2>
-        <div className="field" style={{ marginBottom: 'var(--sp-3)' }}>
-          <label htmlFor="set-name">Display name</label>
-          <input id="set-name" className="input" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="field" style={{ marginBottom: 'var(--sp-3)' }}>
-          <label>Notebook colour</label>
-          <div className="chip-row">
-            {ACCENTS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-label={`Colour ${c}`}
-                onClick={() => setAccent(c)}
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '50%',
-                  background: c,
-                  border: accent === c ? '3px solid var(--ink)' : '2px solid rgba(59,49,40,0.2)',
-                  cursor: 'pointer',
-                }}
-              />
-            ))}
+        <div className="profile-edit-row">
+          <AvatarPicker
+            blob={avatarDirty ? avatar?.blob : profile.avatarBlob}
+            accent={accent}
+            name={name}
+            size={84}
+            onChange={(a) => {
+              setAvatar(a);
+              setAvatarDirty(true);
+            }}
+          />
+          <div className="profile-edit-fields">
+            <div className="field" style={{ marginBottom: 'var(--sp-3)' }}>
+              <label htmlFor="set-name">Display name</label>
+              <input id="set-name" className="input" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>Notebook colour</label>
+              <div className="chip-row">
+                {ACCENTS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Colour ${c}`}
+                    onClick={() => setAccent(c)}
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: '50%',
+                      background: c,
+                      border: accent === c ? '3px solid var(--ink)' : '2px solid rgba(59,49,40,0.2)',
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <button className="btn" onClick={() => void saveIdentity()}>

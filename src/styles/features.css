@@ -8,7 +8,8 @@
   border-bottom: 2px solid var(--line);
 }
 .app-header-inner {
-  max-width: 1060px;
+  /* matches the narrower app-main container */
+  max-width: 840px;
   margin: 0 auto;
   padding: var(--sp-3) var(--sp-4);
   display: flex;
@@ -25,10 +26,11 @@
   color: var(--ink);
   text-decoration: none;
 }
-.app-logo img {
+.app-logo svg {
   width: 36px;
   height: 36px;
-  border-radius: 9px;
+  flex-shrink: 0;
+  color: var(--accent-deep); /* inherits profile accent in the active state */
 }
 .app-nav {
   display: flex;
@@ -48,6 +50,11 @@
   font-size: 0.92rem;
   min-height: var(--tap);
 }
+.nav-link svg {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+}
 .nav-link:hover {
   color: var(--ink);
   border-color: var(--line);
@@ -56,6 +63,7 @@
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent-deep);
+  box-shadow: 2px 3px 0 rgba(59, 49, 40, 0.18); /* paper-cut shadow — identical for every tab */
 }
 .avatar-btn {
   width: 44px;
@@ -70,6 +78,76 @@
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Avatar picker (profile picture) ---------- */
+.avatar-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+.avatar-picker .avatar-preview {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.avatar-picker .avatar-preview:hover {
+  transform: scale(1.04);
+  box-shadow: var(--shadow-md);
+}
+.avatar-picker .avatar-preview:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.avatar-picker-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+/* zoom slider — sized to the picker width so it sits under the circle */
+.avatar-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.avatar-zoom input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.avatar-zoom .faint {
+  font-size: 0.85rem;
+  line-height: 1;
+  user-select: none;
+}
+.profile-edit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.profile-edit-fields {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .profile-edit-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  .profile-edit-fields {
+    width: 100%;
+  }
 }
 @media (max-width: 640px) {
   .app-logo span {
@@ -80,6 +158,26 @@
   }
   .nav-link {
     padding: 7px 11px;
+  }
+}
+/* Icon-only nav must fit narrow phones without horizontal scroll. */
+@media (max-width: 480px) {
+  .app-header-inner {
+    padding: var(--sp-3) var(--sp-2);
+  }
+  .app-nav {
+    gap: 3px;
+  }
+  .nav-link {
+    padding: 7px 7px;
+  }
+  .nav-link svg {
+    width: 19px;
+    height: 19px;
+  }
+  .avatar-btn {
+    width: 38px;
+    height: 38px;
   }
 }
 
@@ -98,6 +196,8 @@
   padding: var(--sp-6) var(--sp-5);
 }
 .gate-card h1 {
+  /* the gate is a branded moment — keep the script here */
+  font-family: var(--font-hand);
   font-size: 2.7rem;
   margin-bottom: var(--sp-2);
 }
@@ -204,7 +304,10 @@
   margin-bottom: var(--sp-5);
 }
 .dash-greeting {
+  /* brand moment — keeps the handwritten identity on the Today screen */
+  font-family: var(--font-hand);
   font-size: 2.4rem;
+  line-height: 1.15;
 }
 .streak-pill {
   display: inline-flex;
@@ -218,6 +321,12 @@
   box-shadow: 2px 3px 0 rgba(59, 49, 40, 0.2);
   font-size: 1.05rem;
 }
+.streak-pill svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent-deep);
+  flex-shrink: 0;
+}
 .dash-progress {
   display: flex;
   align-items: center;
@@ -227,14 +336,19 @@
 .dash-progress .progress-track {
   flex: 1;
 }
+.dash-progress-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
 .due-group {
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-3);
 }
 .due-word-head {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  padding: 7px var(--sp-4);
   background: var(--page);
   border: 1.5px solid var(--line);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
@@ -249,6 +363,16 @@
   font-family: var(--font-hand);
   font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.15;
+}
+.due-word-head .due-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-faint);
+  white-space: nowrap;
 }
 .due-sections {
   border: 1.5px solid var(--line);
@@ -261,11 +385,11 @@
   align-items: center;
   gap: var(--sp-3);
   width: 100%;
-  padding: var(--sp-3) var(--sp-4);
+  padding: 5px var(--sp-4);
   background: var(--paper-deep);
   border-top: 1px dashed var(--line);
   text-align: left;
-  min-height: var(--tap);
+  min-height: calc(var(--tap) - 8px);
 }
 .due-section-row:hover {
   background: var(--accent-soft);
@@ -276,9 +400,17 @@
 }
 .due-section-row .sec-note {
   margin-left: auto;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--ink-faint);
   white-space: nowrap;
+}
+.due-section-row .sec-note.overdue {
+  color: var(--red);
+}
+.due-section-row .sec-note.due {
+  color: #8a6420;
 }
 
 /* ---------- Notebook list ---------- */
@@ -291,7 +423,7 @@
   margin-bottom: var(--sp-4);
 }
 .notebook-head h1 {
-  font-size: 2.4rem;
+  font-size: 1.8rem;
 }
 .word-grid {
   display: grid;
@@ -323,11 +455,31 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  line-height: 1.15;
+}
+/* functional metadata row — clean sans, quiet */
+.word-tile .meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
 }
 .word-tile .pos {
-  font-size: 0.78rem;
-  color: var(--ink-faint);
   font-style: italic;
+}
+.word-tile .lvl {
+  color: var(--ink-faint);
+}
+.word-tile .lvl::before {
+  content: '·';
+  margin-right: var(--sp-2);
+  color: var(--ink-faint);
+}
+.word-tile .pos:empty + .lvl::before,
+.word-tile .meta .lvl:first-child::before {
+  content: none;
 }
 .word-tile .dots {
   display: flex;
@@ -335,8 +487,18 @@
   margin-top: auto;
 }
 .word-tile .count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-family: var(--font-body);
   font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+.word-tile .count-date {
   color: var(--ink-faint);
+  font-size: 0.7rem;
+  font-weight: 400;
 }
 .word-thumb {
   width: 100%;
@@ -346,17 +508,19 @@
   border: 1px solid var(--line);
 }
 
-/* section progress mini-bar on tiles */
+/* section progress mini-bar on tiles — accent matches the daily-goal bar */
 .tile-bar {
-  height: 6px;
+  height: 7px;
   border-radius: 999px;
   background: var(--paper-deep);
+  border: 1px solid var(--line);
   overflow: hidden;
 }
 .tile-bar i {
   display: block;
   height: 100%;
-  background: var(--green);
+  background: var(--accent);
+  border-radius: 999px;
 }
 
 /* ---------- Word card ---------- */
@@ -365,7 +529,30 @@
   margin: 0 auto;
 }
 .word-card-back {
-  margin-bottom: var(--sp-4);
+  /* prominent, obvious way back — no more faint gray text link */
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 16px 6px 12px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
+}
+.word-card-back:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  transform: translateX(-2px);
+}
+.word-card-back:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 .word-head {
   padding: var(--sp-5);
@@ -528,7 +715,7 @@
   text-align: center;
 }
 .review-wrap h1 {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   margin-bottom: var(--sp-2);
 }
 .flip-scene {
@@ -605,6 +792,19 @@
   align-items: center;
   gap: var(--sp-3);
 }
+.quiz-card .page-turn {
+  animation: page-turn-in 0.22s ease-out;
+}
+@keyframes page-turn-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .quiz-card .card-word {
   font-family: var(--font-hand);
   font-size: 2.6rem;
@@ -674,6 +874,37 @@
   gap: var(--sp-3);
   text-align: left;
 }
+/* Reserve room for the feedback so answering never shoves the card taller —
+   the Next button stays in a predictable zone. Detail content scrolls inside
+   the panel when it runs long. */
+.quiz-card {
+  min-height: 520px;
+}
+.quiz-feedback {
+  min-height: 0;
+  flex: 1;
+}
+.quiz-detail {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: 150px;
+}
+.quiz-feedback .btn {
+  margin-top: auto; /* pins Next to the card's bottom edge */
+}
+@media (max-height: 700px), (max-width: 480px) {
+  .quiz-card {
+    min-height: 0;
+  }
+  .quiz-detail {
+    max-height: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quiz-feedback {
+    transition: none;
+  }
+}
 .quiz-verdict {
   font-weight: 700;
   text-align: center;
@@ -706,7 +937,7 @@
   text-align: center;
 }
 .spelling-wrap h1 {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   margin-bottom: var(--sp-2);
 }
 .spelling-clue {
@@ -904,10 +1135,10 @@
   gap: var(--sp-5);
 }
 .settings-stack h1 {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
 }
 .settings-group h2 {
-  font-size: 1.6rem;
+  font-size: 1.15rem;
   margin-bottom: var(--sp-3);
 }
 .intervals-grid {
@@ -947,15 +1178,29 @@
   flex-wrap: wrap;
 }
 
-/* ---------- Persian meaning subtitle ---------- */
+/* ---------- Persian meaning subtitle ----------
+   Persian runs RTL even inside LTR cards: right-aligned, clean sans stack
+   (Caveat has no Arabic glyphs), slightly larger for Arabic-script legibility. */
 .persian-meaning {
+  font-family: var(--font-body);
   font-size: 0.95rem;
+  line-height: 1.7;
   color: var(--ink-soft);
   margin-top: 2px;
+  text-align: right;
   overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 .word-tile .persian-meaning {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  margin-top: 0;
+}
+
+/* RTL page headings (e.g. Persian library titles): align the block to the
+   right; the sans face needs no extra optical size correction. */
+.notebook-head h1[dir='rtl'] {
+  text-align: right;
+  line-height: 1.35;
 }
 
 /* ---------- Word Library ---------- */
@@ -989,6 +1234,13 @@
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
+/* Persian (RTL) card titles keep the handwriting feel but sit correctly:
+   right-aligned block, slightly smaller so the Arabic-script headline optically
+   matches the Latin ones. */
+.lib-card-title[dir='rtl'] {
+  text-align: right;
+  font-size: 1.45rem;
+}
 .lib-card-desc {
   font-size: 0.85rem;
   color: var(--ink-soft);
@@ -1002,21 +1254,42 @@
   font-size: 0.82rem;
 }
 .lib-card-counts {
+  font-family: var(--font-body);
   font-size: 0.8rem;
-  font-weight: 700;
   color: var(--ink-soft);
 }
+.lib-card-counts strong {
+  font-size: 0.95rem;
+  color: var(--ink);
+}
 .lib-card-bar {
-  height: 6px;
+  height: 7px;
   border-radius: 999px;
   background: var(--paper-deep);
+  border: 1px solid var(--line);
   overflow: hidden;
 }
 .lib-card-bar i {
   display: block;
   height: 100%;
-  background: var(--green);
+  background: var(--accent);
+  border-radius: 999px;
   transition: width 0.4s ease;
+}
+/* quiet affordance — the whole card is the click target, this says so */
+.lib-card-open {
+  margin-top: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.lib-collection-card:hover .lib-card-open,
+.lib-collection-card:focus-visible .lib-card-open {
+  opacity: 1;
+  transform: translateX(0);
 }
 .lib-chip-mixed {
   background: var(--paper-deep);
@@ -1094,6 +1367,111 @@
 }
 
 /* word rows */
+/* ---------- A–Z margin filter (book word list) ---------- */
+.lib-list-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.lib-list-main {
+  flex: 1;
+  min-width: 0;
+}
+.alpha-strip {
+  position: sticky;
+  top: 92px; /* sits below the sticky app header */
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: var(--page);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 2px 0;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.alpha-strip::-webkit-scrollbar {
+  display: none;
+}
+.alpha-letter {
+  appearance: none;
+  display: block;
+  width: 34px;
+  min-height: 28px; /* reliable touch target on narrow screens */
+  padding: 1px 0;
+  border: none;
+  border-bottom: 1px solid var(--line); /* hairline between letters */
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink-faint);
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.alpha-letter:last-child {
+  border-bottom: none;
+}
+.alpha-letter:hover:not(:disabled) {
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+}
+.alpha-letter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.alpha-letter:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.alpha-letter.active {
+  background: var(--accent);
+  color: #fffdf7;
+}
+.lib-filter-note {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.lib-filter-note strong {
+  color: var(--ink);
+}
+.lib-filter-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fffdf7;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.lib-filter-clear {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: auto;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.lib-filter-clear:hover {
+  color: var(--accent);
+}
+
 .lib-word-list {
   list-style: none;
   margin: 0;

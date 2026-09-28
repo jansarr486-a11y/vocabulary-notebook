@@ -98,6 +98,9 @@ export interface Profile {
   createdAt: number;
   settings: ProfileSettings;
   stats: ProfileStats;
+  /** Added in v1.3 — optional profile picture, absent on older rows. */
+  avatarBlob?: Blob;
+  avatarMime?: string;
   schemaVersion: number;
 }
 
@@ -181,6 +184,8 @@ export interface BackupEnvelope {
     settings: ProfileSettings;
     stats: ProfileStats;
     accentColor: string;
+    /** base64 data URL when the profile has a picture. */
+    avatarDataUrl?: string;
   };
   words: BackupWord[];
 }

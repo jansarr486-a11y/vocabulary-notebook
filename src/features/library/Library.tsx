@@ -76,6 +76,58 @@ function Breadcrumb({ trail }: { trail: { label: string; to?: string }[] }) {
   );
 }
 
+/** Strip order for the A–Z margin filter. */
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+/** First letter of a headword, for the A–Z filter. */
+const firstLetter = (w: LibraryWord) => w.word.trim().charAt(0).toUpperCase();
+
+/**
+ * Vertical A–Z margin tab beside the word list. A hard filter (not scroll-to):
+ * picking a letter re-renders the list with only those words. Letters with no
+ * matches in the book are disabled. Sticks while the list scrolls.
+ */
+function AlphaStrip({
+  active,
+  available,
+  onPick,
+}: {
+  active: string | null;
+  available: Set<string>;
+  onPick: (letter: string | null) => void;
+}) {
+  return (
+    <nav className="alpha-strip" aria-label="Filter words by first letter">
+      <button
+        type="button"
+        className={`alpha-letter ${active === null ? 'active' : ''}`}
+        aria-pressed={active === null}
+        onClick={() => onPick(null)}
+      >
+        All
+      </button>
+      {ALPHABET.map((L) => {
+        const has = available.has(L);
+        const isActive = active === L;
+        return (
+          <button
+            key={L}
+            type="button"
+            className={`alpha-letter ${isActive ? 'active' : ''}`}
+            disabled={!has && !isActive}
+            aria-pressed={isActive}
+            aria-label={has ? `Show only words starting with ${L}` : `No words starting with ${L}`}
+            title={has ? `${L}` : undefined}
+            onClick={() => onPick(L)}
+          >
+            {L}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 function WordRow({
   entry,
   alreadyAdded,
@@ -139,23 +191,39 @@ function WordListView({
   const added = useAddedWordSet(profile?.id);
   const [selected, setSelected] = useState<LibraryWord[]>([]);
   const [query, setQuery] = useState('');
+  /** Active A–Z hard filter; null = All. */
+  const [letter, setLetter] = useState<string | null>(null);
 
   const selectedSet = useMemo(() => new Set(selected.map((w) => w.word)), [selected]);
-  const available = book.words.filter((w) => !added.has(w.word.trim().toLowerCase()));
+  // Alphabetical by headword — the strip filter assumes (and preserves) A–Z order.
+  const sortedWords = useMemo(
+    () => [...book.words].sort((a, b) => a.word.localeCompare(b.word, 'en', { sensitivity: 'base' })),
+    [book.words],
+  );
+  const available = sortedWords.filter((w) => !added.has(w.word.trim().toLowerCase()));
   const selectedAvailable = selected.filter((w) => available.includes(w));
 
-  // Search box: filters the visible rows by headword, definition, or Persian meaning.
+  // First letters that actually exist in this book — the rest of the strip is disabled.
+  const lettersInBook = useMemo(() => new Set(sortedWords.map(firstLetter)), [sortedWords]);
+
+  // Search box + A–Z letter combine with AND logic.
   const q = query.trim().toLowerCase();
   const visible = useMemo(() => {
-    if (!q) return book.words;
-    return book.words.filter(
-      (w) =>
-        w.word.toLowerCase().includes(q) ||
-        w.definition.toLowerCase().includes(q) ||
-        (w.persianMeaning ?? '').includes(q),
-    );
-  }, [book.words, q]);
+    let list = sortedWords;
+    if (letter) list = list.filter((w) => firstLetter(w) === letter);
+    if (q) {
+      list = list.filter(
+        (w) =>
+          w.word.toLowerCase().includes(q) ||
+          w.definition.toLowerCase().includes(q) ||
+          (w.persianMeaning ?? '').includes(q),
+      );
+    }
+    return list;
+  }, [sortedWords, letter, q]);
   const visibleAvailable = visible.filter((w) => !added.has(w.word.trim().toLowerCase()));
+
+  const pickLetter = (L: string | null) => setLetter((prev) => (prev === L ? null : L));
 
   const toggle = (w: LibraryWord) => {
     setSelected((prev) => {
@@ -197,8 +265,8 @@ function WordListView({
       <Breadcrumb trail={trail} />
       <div className="notebook-head">
         <div>
-          <h1>{book.title}</h1>
-          <p className="faint" style={{ marginTop: 2 }}>
+          <h1 dir="auto">{book.title}</h1>
+          <p className="faint" dir="auto" style={{ marginTop: 2 }}>
             {collection.title}
             {level ? ` · ${level}` : ''}
           </p>
@@ -254,31 +322,46 @@ function WordListView({
         </div>
       </div>
 
-      <ul className="lib-word-list">
-        {visible.map((entry) => (
-          <WordRow
-            key={entry.word}
-            entry={entry}
-            alreadyAdded={added.has(entry.word.trim().toLowerCase())}
-            selected={selectedSet.has(entry.word)}
-            onToggle={toggle}
-          />
-        ))}
-        {book.words.length > 0 && visible.length === 0 && (
-          <div className="empty-state">
-            <span className="doodle">🔍</span>
-            <h3>No words match “{query}”</h3>
-            <p>Try another spelling — or search the Persian meaning too.</p>
-          </div>
-        )}
-        {book.words.length === 0 && (
-          <div className="empty-state">
-            <span className="doodle">📖</span>
-            <h3>No words here yet</h3>
-            <p>The tutor will fill this book soon.</p>
-          </div>
-        )}
-      </ul>
+      <div className="lib-list-layout">
+        <div className="lib-list-main">
+          {letter && (
+            <p className="lib-filter-note" role="status">
+              <strong>{visible.length}</strong> word{visible.length === 1 ? '' : 's'} starting with{' '}
+              <span className="lib-filter-letter">{letter}</span>
+              {q ? ' and matching your search' : ''}
+              <button type="button" className="lib-filter-clear" onClick={() => setLetter(null)}>
+                show all
+              </button>
+            </p>
+          )}
+          <ul className="lib-word-list">
+            {visible.map((entry) => (
+              <WordRow
+                key={entry.word}
+                entry={entry}
+                alreadyAdded={added.has(entry.word.trim().toLowerCase())}
+                selected={selectedSet.has(entry.word)}
+                onToggle={toggle}
+              />
+            ))}
+            {book.words.length > 0 && visible.length === 0 && (
+              <div className="empty-state">
+                <span className="doodle">🔍</span>
+                <h3>No words match{q ? ` “${query}”` : ''}</h3>
+                <p>Try another spelling — or search the Persian meaning too.</p>
+              </div>
+            )}
+            {book.words.length === 0 && (
+              <div className="empty-state">
+                <span className="doodle">📖</span>
+                <h3>No words here yet</h3>
+                <p>The tutor will fill this book soon.</p>
+              </div>
+            )}
+          </ul>
+        </div>
+        <AlphaStrip active={letter} available={lettersInBook} onPick={pickLetter} />
+      </div>
     </div>
   );
 }
@@ -323,28 +406,31 @@ export function Library() {
           <Breadcrumb
             trail={[{ label: 'Word Library', to: '/library' }, { label: collection.title }]}
           />
-          <div className="notebook-head">
-            <div>
-              <h1>{collection.title}</h1>
-              {collection.description && <p className="faint">{collection.description}</p>}
-            </div>
-          </div>
+      <div className="notebook-head">
+        <div>
+          <h1 dir="auto">{collection.title}</h1>
+          {collection.description && <p className="faint" dir="auto">{collection.description}</p>}
+        </div>
+      </div>
           <div className="lib-collection-grid">
             {collection.books.map((book) => {
               const counts = countsFor(book.words, added);
               const bookLevel = book.level ?? collection.level;
               return (
                 <Link key={book.id} to={`/library/${collection.id}/${book.id}`} className="lib-collection-card">
-                  <span className="lib-card-title">{book.title}</span>
+                  <span className="lib-card-title" dir="auto">{book.title}</span>
                   <span className="lib-card-meta">
                     {bookLevel && <LevelBadge tag={bookLevel} />}
                     <span className="faint">{counts.total} words</span>
                   </span>
                   <span className="lib-card-counts">
-                    {counts.added} / {counts.total} added
+                    <strong>{counts.added} of {counts.total}</strong> added to notebook
                   </span>
                   <span className="lib-card-bar" aria-hidden>
                     <i style={{ width: `${counts.total > 0 ? (counts.added / counts.total) * 100 : 0}%` }} />
+                  </span>
+                  <span className="lib-card-open" aria-hidden>
+                    Open book →
                   </span>
                 </Link>
               );
@@ -378,8 +464,8 @@ export function Library() {
               }
               className="lib-collection-card"
             >
-              <span className="lib-card-title">{collection.title}</span>
-              {collection.description && <span className="lib-card-desc">{collection.description}</span>}
+              <span className="lib-card-title" dir="auto">{collection.title}</span>
+              {collection.description && <span className="lib-card-desc" dir="auto">{collection.description}</span>}
               <span className="lib-card-meta">
                 <CollectionLevelBadges collection={collection} />
                 <span className="faint">
@@ -388,10 +474,13 @@ export function Library() {
                 </span>
               </span>
               <span className="lib-card-counts">
-                {counts.added} / {counts.total} added
+                <strong>{counts.added} of {counts.total}</strong> added to notebook
               </span>
               <span className="lib-card-bar" aria-hidden>
                 <i style={{ width: `${counts.total > 0 ? (counts.added / counts.total) * 100 : 0}%` }} />
+              </span>
+              <span className="lib-card-open" aria-hidden>
+                {collection.books.length > 1 ? 'Browse books →' : 'Open book →'}
               </span>
             </Link>
           );

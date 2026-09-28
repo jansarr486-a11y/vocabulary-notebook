@@ -230,7 +230,7 @@ export function WordCard() {
 
   return (
     <div className="word-card" ref={cardRef}>
-      <Link to="/notebook" className="word-card-back faint">
+      <Link to="/notebook" className="word-card-back">
         ← back to notebook
       </Link>
 
