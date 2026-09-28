@@ -7,9 +7,9 @@
 
 export const SCHEMA_VERSION = 1;
 
-export type LevelTag = 'A1' | 'A2' | 'B1' | 'B2' | 'IELTS' | 'TOEFL';
+export type LevelTag = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'IELTS' | 'TOEFL';
 
-export const LEVEL_TAGS: LevelTag[] = ['A1', 'A2', 'B1', 'B2', 'IELTS', 'TOEFL'];
+export const LEVEL_TAGS: LevelTag[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'IELTS', 'TOEFL'];
 
 export const PARTS_OF_SPEECH = [
   'noun',
@@ -217,6 +217,7 @@ export const LEVEL_TAG_STYLES: Record<LevelTag, { bg: string; fg: string }> = {
   A2: { bg: '#dff0e8', fg: '#2f6b52' },
   B1: { bg: '#e3ecf7', fg: '#3d5e8c' },
   B2: { bg: '#efe6f5', fg: '#6a4d8c' },
+  C1: { bg: '#fbe3ec', fg: '#96386b' },
   IELTS: { bg: '#fdeadd', fg: '#a05a2c' },
   TOEFL: { bg: '#fde3e3', fg: '#a03c3c' },
 };

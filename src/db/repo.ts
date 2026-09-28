@@ -143,8 +143,11 @@ export function wordFromLibrary(
     phonetic: lw.phonetic,
     partOfSpeech: lw.partOfSpeech,
     persianMeaning: lw.persianMeaning,
-    levelTags: levelTag ? [levelTag] : [],
-    courseTag: `${source.collectionTitle} — ${source.bookTitle}`,
+    // Per-word CEFR tag (from the book's own badges) wins over the book's shared level.
+    levelTags: (lw.level ?? levelTag) ? [(lw.level ?? levelTag) as LevelTag] : [],
+    courseTag: lw.unit != null
+      ? `${source.collectionTitle} — ${source.bookTitle} · Unit ${lw.unit}`
+      : `${source.collectionTitle} — ${source.bookTitle}`,
     librarySource: source,
     dateAdded: now,
     sections,
