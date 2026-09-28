@@ -7,9 +7,11 @@ import {
   findBook,
   isMixedLevels,
 } from './libraryData';
-import { wordFromLibrary } from '../../db/repo';
+import { wordFromLibrary, withSection1Complete } from '../../db/repo';
 import { isSectionUnlocked } from '../../db/schedule';
 import { DEFAULT_INTERVALS } from '../../db/models';
+import { DAY_MS } from '../../db/time';
+import { isDistractorEligible } from '../review/quiz';
 
 /** Guard rails for the static, tutor-edited data file. */
 describe('libraryData invariants', () => {
@@ -142,5 +144,45 @@ describe('wordFromLibrary', () => {
     const w = wordFromLibrary(7, entry, source, 'B2');
     w.sections[0].text = 'edited by the student';
     expect(entry.definition).toBe('to make something bad less severe');
+  });
+});
+
+describe('direct-to-review adds', () => {
+  const now = 1_758_000_000_000;
+  const entry = {
+    word: 'Mitigate ',
+    definition: 'to make something bad less severe',
+    example: 'Trees mitigate heat.',
+    persianMeaning: 'کاهش دادن',
+    partOfSpeech: 'verb',
+    phonetic: '/ˈmɪtɪɡeɪt/',
+  };
+  const source = {
+    collectionId: 'c1',
+    collectionTitle: 'Collection One',
+    bookId: 'b1',
+    bookTitle: 'Book One',
+  };
+
+  it('withSection1Complete stamps only section 1, keeping later steps open', () => {
+    const w = withSection1Complete(wordFromLibrary(7, entry, source, 'B2'), now);
+    expect(w.sections[0].completedAt).toBe(now);
+    expect(w.sections[0].unlockedAt).toBe(now);
+    expect(w.sections[0].text).toBe(entry.definition); // honest content, not a stub
+    expect(w.sections[1].completedAt).toBeUndefined();
+    expect(w.sections[2].text).toBe(''); // own sentence still belongs to the student
+  });
+
+  it('makes the word eligible for the review deck and quiz immediately', () => {
+    const w = withSection1Complete(wordFromLibrary(7, entry, source, 'B2'), now);
+    expect(w.sections.some((s) => s.completedAt != null)).toBe(true); // buildDeck admits it
+    expect(isDistractorEligible(w)).toBe(true); // quiz can use it
+  });
+
+  it('follows the normal schedule afterwards: section 2 opens after the s2 interval', () => {
+    const w = withSection1Complete(wordFromLibrary(7, entry, source, 'B2'), now);
+    const dayAfter = now + DEFAULT_INTERVALS.s2 * DAY_MS + 1;
+    expect(isSectionUnlocked(2, w, DEFAULT_INTERVALS, now)).toBe(false);
+    expect(isSectionUnlocked(2, w, DEFAULT_INTERVALS, dayAfter)).toBe(true);
   });
 });

@@ -183,6 +183,46 @@ export async function addLibraryWords(
   return rows.length;
 }
 
+/**
+ * Stamp section 1 (the dictionary definition, pre-filled from the library) as
+ * completed NOW, making the word immediately review-eligible without walking
+ * the 3-step notebook cycle. The completion is honest — the definition is real
+ * content the student will be quizzed on. Steps 2 (example) and 3 (own
+ * sentence) stay open; step 2 unlocks on the normal schedule counted from this
+ * stamp, so the word still shows up as a notebook item to finish.
+ */
+export function withSection1Complete(word: Word, now = Date.now()): Word {
+  const s1 = word.sections[0];
+  s1.unlockedAt = now;
+  s1.completedAt = now;
+  return word;
+}
+
+/**
+ * Add library words ready for REVIEW: same independent notebook copies as
+ * addLibraryWords, but with section 1 completed so buildDeck admits them on
+ * the next visit to the Review tab. Skips words already present. Returns how
+ * many were added.
+ */
+export async function addLibraryWordsForReview(
+  profileId: number,
+  libraryWords: LibraryWord[],
+  source: WordLibrarySource,
+  levelTag: LevelTag | undefined,
+  now = Date.now(),
+): Promise<number> {
+  const existing = new Set(
+    (await listWords(profileId)).map((w) => w.wordLower),
+  );
+  const fresh = libraryWords.filter((lw) => !existing.has(lw.word.trim().toLowerCase()));
+  if (fresh.length === 0) return 0;
+  const rows = fresh.map((lw) =>
+    withSection1Complete(wordFromLibrary(profileId, lw, source, levelTag, now), now),
+  );
+  await db.transaction('rw', db.words, () => db.words.bulkAdd(rows));
+  return rows.length;
+}
+
 export async function addWord(word: Word): Promise<number> {
   return db.words.add(word);
 }

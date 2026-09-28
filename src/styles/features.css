@@ -1393,6 +1393,16 @@
   margin-left: auto;
 }
 
+/* “Review mode” toggle — same pill shape as the Add checkbox, green when on. */
+.lib-check-review.checked {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.lib-check-review.checked input {
+  accent-color: #fff;
+}
+
 /* word rows */
 /* ---------- A–Z margin filter (book word list) ---------- */
 .lib-list-layout {

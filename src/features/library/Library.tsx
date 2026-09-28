@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
-import { addLibraryWords, listWords } from '../../db/repo';
+import { addLibraryWords, addLibraryWordsForReview, listWords } from '../../db/repo';
 import { logProgressEvent } from '../../db/progressRepo';
 import { LevelBadge } from '../../components/ui/Chips';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
@@ -186,6 +186,9 @@ function WordListView({
   trail: { label: string; to?: string }[];
   onBack: () => void;
 }) {
+  // When on, added words skip the 3-step notebook cycle: they arrive with the
+  // definition section already completed and can be reviewed right away.
+  const [directToReview, setDirectToReview] = useState(false);
   const { profile } = useProfiles();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -241,17 +244,15 @@ function WordListView({
 
   const addSelected = async () => {
     if (!profile || selectedAvailable.length === 0) return;
-    const n = await addLibraryWords(
-      profile.id!,
-      selectedAvailable,
-      {
-        collectionId: collection.id,
-        collectionTitle: collection.title,
-        bookId: book.id,
-        bookTitle: book.title,
-      },
-      level,
-    );
+    const source = {
+      collectionId: collection.id,
+      collectionTitle: collection.title,
+      bookId: book.id,
+      bookTitle: book.title,
+    };
+    const n = directToReview
+      ? await addLibraryWordsForReview(profile.id!, selectedAvailable, source, level)
+      : await addLibraryWords(profile.id!, selectedAvailable, source, level);
     setSelected([]);
     // Progress logging: one word_added event per fresh word (fire-and-forget).
     if (profile?.id != null && n > 0) {
@@ -261,10 +262,10 @@ function WordListView({
     }
     toast(
       n === 1
-        ? `“${selectedAvailable[0].word}” added to your notebook! 🌱`
-        : `${n} words added to your notebook! 🌱`,
+        ? `“${selectedAvailable[0].word}” added${directToReview ? ' — ready to review! 🎯' : ' to your notebook! 🌱'}`
+        : `${n} words added${directToReview ? ' — ready to review! 🎯' : ' to your notebook! 🌱'}`,
     );
-    navigate('/notebook');
+    navigate(directToReview ? '/review' : '/notebook');
   };
 
   return (
@@ -303,6 +304,28 @@ function WordListView({
             : 'Tick words to add several at once'}
         </span>
         <div className="lib-batch-actions">
+          <label
+            className={`lib-check lib-check-review ${directToReview ? 'checked' : ''}`}
+            title="Skip the 3-step notebook work: words arrive ready to review (the definition step is done for you — you can still write your own sentence later)."
+          >
+            <input
+              type="checkbox"
+              checked={directToReview}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  const ok = window.confirm(
+                    'Add words straight to Review?\n\n' +
+                      'They will skip the 3-step notebook work and appear in your Review deck right away (the definition step is completed for you). ' +
+                      'You can still finish their notebook steps later.',
+                  );
+                  if (ok) setDirectToReview(true);
+                } else {
+                  setDirectToReview(false);
+                }
+              }}
+            />
+            <span>🎯 Review mode</span>
+          </label>
           {available.length > 0 && (
             <button
               type="button"
@@ -324,7 +347,7 @@ function WordListView({
             disabled={selectedAvailable.length === 0}
             onClick={() => void addSelected()}
           >
-            ＋ Add selected words
+            {directToReview ? '＋ Add to Review' : '＋ Add selected words'}
           </button>
         </div>
       </div>
