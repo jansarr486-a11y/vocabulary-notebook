@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Vocabulary Notebook</title>
-    <meta
-      name="description"
-      content="A personal notebook for English vocabulary — offline-first."
-    />
+    <meta name="description" content="A personal notebook for English vocabulary — offline-first." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#c96f4a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -15,6 +12,181 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Vocab Book" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <style>
+      html {
+        background: #faf6ee;
+      }
+    </style>
+    <script>
+      // Boot watchdog: if the app fails to mount (typically a stale service
+      // worker serving a broken cached bundle after a deploy), clear the
+      // offline caches once and reload. main.tsx stands the watchdog down by
+      // removing the boot flag as soon as React mounts.
+      (function () {
+        var BOOT_KEY = 'vn:boot';
+        var COUNT_KEY = 'vn:repair-count';
+
+        function msg(html) {
+          var paint = function () {
+            try {
+              var el = document.getElementById('root');
+              if (el && el.children.length === 0) { // never paint over a mounted app
+                el.innerHTML =
+                  '<div style="font-family:system-ui,sans-serif;max-width:28rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#5b5346">' +
+                  html +
+                  '</div>';
+              }
+            } catch (e) {
+              /* noop */
+            }
+          };
+          // This script runs in <head>; guard paths can fire before #root exists.
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', paint);
+          } else {
+            paint();
+          }
+        }
+
+        function manualHelp(offline) {
+          msg(
+            '<h1 style="font-size:1.3rem;margin-bottom:.5rem">' +
+              (offline ? 'You seem to be offline' : 'Having trouble loading') +
+              '</h1>' +
+              '<p>' +
+              (offline
+                ? 'The notebook needs the internet the first time it loads (or after an update). Please reconnect and reload — your saved words are safe on this device.'
+                : 'The offline copy looks damaged. Open the ' +
+                  '<a href="./recover.html">repair page</a> to clear it, or clear this site&rsquo;s data in your browser settings, then reload.') +
+              '</p>' +
+              (offline
+                ? ''
+                : '<p><a href="./recover.html" style="color:#c96f4a">Open repair page →</a></p>')
+          );
+        }
+
+        function repair() {
+          // If the browser reports being offline, clearing caches can't help
+          // — point at the network instead of looping reloads.
+          if (navigator.onLine === false) {
+            manualHelp(true);
+            return;
+          }
+          try {
+            sessionStorage.setItem(BOOT_KEY, JSON.stringify({ stage: 'repair', t: Date.now() }));
+          } catch (e) {
+            /* noop */
+          }
+          try {
+            var rawC = JSON.parse(localStorage.getItem(COUNT_KEY) || 'null');
+            var n = rawC && typeof rawC.n === 'number' && Date.now() - (rawC.t || 0) < 86400000 ? rawC.n : 0;
+            localStorage.setItem(COUNT_KEY, JSON.stringify({ n: n + 1, t: Date.now() }));
+          } catch (e) {
+            /* noop */
+          }
+          var done = 0;
+          function finish() {
+            if (++done < 2) return;
+            try {
+              sessionStorage.removeItem(BOOT_KEY);
+            } catch (e) {
+              /* noop */
+            }
+            // location.reload() works even when the URL only differs by
+            // hash (a same-fragment location.replace would be a no-op).
+            location.reload();
+          }
+          try {
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+              navigator.serviceWorker
+                .getRegistrations()
+                .then(function (regs) {
+                  regs.forEach(function (r) {
+                    r.unregister();
+                  });
+                  finish();
+                })
+                .catch(finish);
+            } else {
+              finish();
+            }
+          } catch (e) {
+            finish();
+          }
+          try {
+            if (window.caches && caches.keys) {
+              caches
+                .keys()
+                .then(function (keys) {
+                  return Promise.all(keys.map(function (k) {
+                    return caches.delete(k);
+                  }));
+                })
+                .then(finish)
+                .catch(finish);
+            } else {
+              finish();
+            }
+          } catch (e) {
+            finish();
+          }
+        }
+
+        var prev = null;
+        try {
+          prev = JSON.parse(sessionStorage.getItem(BOOT_KEY) || 'null');
+        } catch (e) {
+          /* noop */
+        }
+        try {
+          document.documentElement.style.background = '#faf6ee';
+        } catch (e) {
+          /* noop */
+        }
+
+        // A repair ran in this tab very recently and didn't fix it — don't loop.
+        if (prev && prev.stage === 'repair' && Date.now() - prev.t < 60000) {
+          manualHelp();
+          return;
+        }
+
+        var count = 0;
+        try {
+          var raw = JSON.parse(localStorage.getItem(COUNT_KEY) || 'null');
+          if (raw && typeof raw.n === 'number' && Date.now() - (raw.t || 0) < 86400000) {
+            count = raw.n; // repairs older than 24h no longer count
+          }
+        } catch (e) {
+          /* noop */
+        }
+        if (count >= 3) {
+          manualHelp();
+          return;
+        }
+
+        try {
+          sessionStorage.setItem(BOOT_KEY, JSON.stringify({ stage: 'boot', t: Date.now() }));
+        } catch (e) {
+          /* noop */
+        }
+
+        // Arm the watchdog on every load: main.tsx stands it down when React
+        // mounts. (Not gated on navigator.serviceWorker.controller — after a
+        // repair unregisters the SW, a still-broken page has no controller.)
+        setTimeout(function () {
+          var cur = null;
+          try {
+            cur = JSON.parse(sessionStorage.getItem(BOOT_KEY) || 'null');
+          } catch (e) {
+            /* noop */
+          }
+          if (cur && cur.stage === 'boot') {
+            msg('<p style="margin-top:3rem">Fixing a stuck offline cache…</p>');
+            repair();
+          }
+        }, 10000);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

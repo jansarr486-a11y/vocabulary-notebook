@@ -39,6 +39,9 @@ export default defineConfig({
         // to keep the app fully offline-capable.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // Keep the standalone repair page out of the SPA fallback so it can
+        // be loaded even when the app shell itself is broken.
+        navigateFallbackDenylist: [/recover\.html$/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

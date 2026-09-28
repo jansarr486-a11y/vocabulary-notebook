@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repair — Vocabulary Notebook</title>
+    <style>
+      html {
+        background: #faf6ee;
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        color: #5b5346;
+        max-width: 30rem;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      button {
+        font: inherit;
+        padding: 0.6rem 1.4rem;
+        border-radius: 999px;
+        border: 2px solid #c96f4a;
+        background: #c96f4a;
+        color: #fff;
+        cursor: pointer;
+        margin: 1rem 0;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .log {
+        font-size: 0.85rem;
+        color: #7a7060;
+        min-height: 3rem;
+        white-space: pre-line;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Repair Vocabulary Notebook</h1>
+    <p>
+      If the app shows a blank white page, its offline copy is stuck. This page
+      clears that copy — your words and progress are stored separately and are
+      <strong>not</strong> deleted.
+    </p>
+    <button id="go">Clear offline copy &amp; reload</button>
+    <div class="log" id="log"></div>
+    <script>
+      var logEl = document.getElementById('log');
+      function say(text) {
+        logEl.textContent += text + '\n';
+      }
+      document.getElementById('go').addEventListener('click', function () {
+        var btn = this;
+        btn.disabled = true;
+        var done = 0;
+        var steps = 2;
+        function finish() {
+          if (++done < steps) return;
+          say('Done. Reloading…');
+          setTimeout(function () {
+            location.replace('./#/'); // relative: works under any base path
+          }, 400);
+        }
+        say('Clearing caches…');
+        if (window.caches && caches.keys) {
+          caches
+            .keys()
+            .then(function (keys) {
+              return Promise.all(
+                keys.map(function (k) {
+                  say('– removed ' + k);
+                  return caches.delete(k);
+                }),
+              );
+            })
+            .then(finish)
+            .catch(function () {
+              finish();
+            });
+        } else {
+          finish();
+        }
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          navigator.serviceWorker
+            .getRegistrations()
+            .then(function (regs) {
+              regs.forEach(function (r) {
+                say('– unregistered service worker');
+                r.unregister();
+              });
+              finish();
+            })
+            .catch(finish);
+        } else {
+          finish();
+        }
+      });
+    </script>
+  </body>
+</html>
