@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
 import { addWord, newWord, listWords } from '../../db/repo';
+import { logProgressEvent } from '../../db/progressRepo';
 import { LEVEL_TAGS, type LevelTag } from '../../db/models';
 import { wordSectionStatuses } from '../../db/schedule';
 import { StateDot } from '../../components/ui/Chips';
@@ -78,6 +79,8 @@ export function Notebook() {
 
   const submitNew = async (input: Parameters<typeof newWord>[1]) => {
     const id = await addWord(newWord(profile.id!, input));
+    // Progress logging (fire-and-forget, never alters the add flow).
+    logProgressEvent(profile.id!, { type: 'word_added', wordId: id, meta: { source: 'manual' } });
     setAdding(false);
     toast(`“${input.word.trim()}” added to your notebook!`);
     navigate(`/word/${id}`);

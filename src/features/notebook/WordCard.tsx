@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
 import { getWord, deleteWord, completeSection, saveSectionText, uncompleteSection, updateWordHeader } from '../../db/repo';
+import { logProgressEvent } from '../../db/progressRepo';
 import { unlockLabel, wordSectionStatuses } from '../../db/schedule';
 import { suggestDefinition, type Suggestion } from '../dictionary/dictionary';
 import { LevelBadge, StateBadge } from '../../components/ui/Chips';
@@ -71,6 +72,17 @@ function SectionEditor({
       return;
     }
     await completeSection(word.id!, index, text.trim(), profile!.settings.intervals, profile!.id!);
+    // Progress logging (fire-and-forget, never alters the section flow).
+    if (profile?.id != null) {
+      logProgressEvent(profile.id, {
+        type: 'section_completed',
+        wordId: word.id,
+        meta: { sectionNumber: index },
+      });
+      if (index === 3) {
+        logProgressEvent(profile.id, { type: 'own_sentence_written', wordId: word.id });
+      }
+    }
     toast(`Section ${index} complete! ${index < 4 ? 'The next one unlocks soon. 🌟' : 'Word finished! 🎉'}`);
     onDone();
   };

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useProfiles } from '../../context/ProfileContext';
 import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../components/ui/ToastProvider';
@@ -9,12 +9,31 @@ import { hashPin, verifyPin } from '../../db/pin';
 import { exportPdf, downloadJsonBackup, buildProgressSummary, shareOrCopySummary } from '../exports/exporters';
 import { loadSamplePack } from './sampleData';
 import { DEFAULT_QUIZ_SETTINGS, type BackupEnvelope, type QuizAnswerMode } from '../../db/models';
+import { useI18n, LANGS, type Lang } from '../../i18n';
+import {
+  tutorModeEnabled,
+  setTutorModeEnabled,
+  getTutorPin,
+  setTutorPin,
+} from '../progress/ClassOverview';
 
 const ACCENTS = ['#c96f4a', '#d9a13c', '#7fa05f', '#8c5f9d', '#4a7bb5', '#c95f7f'];
 
 export function Settings() {
   const { profile, refresh, signOut } = useProfiles();
   const { toast } = useToast();
+  const { t, lang, setLang } = useI18n();
+
+  // ---- tutor mode state ----
+  const [tutorOn, setTutorOn] = useState(false);
+  const [tutorPinSet, setTutorPinSet] = useState(false);
+  const [tutorPinPad, setTutorPinPad] = useState<'new' | 'enter' | null>(null);
+  const [pendingTutorEnable, setPendingTutorEnable] = useState(false);
+
+  useEffect(() => {
+    void tutorModeEnabled().then(setTutorOn);
+    void getTutorPin().then((p) => setTutorPinSet(!!p.hash && !!p.salt));
+  }, []);
 
   const s = profile?.settings;
   const [s2, setS2] = useState(s?.intervals.s2 ?? 2);
@@ -417,6 +436,69 @@ export function Settings() {
         </div>
       </section>
 
+      {/* ---------- Language ---------- */}
+      <section className="settings-group paper-card">
+        <h2>🌐 {t('lang.label')}</h2>
+        <div className="chip-row">
+          {LANGS.map((l) => (
+            <button
+              key={l}
+              type="button"
+              className={`chip ${lang === l ? 'chip-on' : ''}`}
+              aria-pressed={lang === l}
+              onClick={() => setLang(l as Lang)}
+            >
+              {t(`lang.${l}`)}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- Tutor mode ---------- */}
+      <section className="settings-group paper-card">
+        <h2>👩‍🏫 {t('tutor.title')}</h2>
+        <p className="muted" style={{ marginBottom: 'var(--sp-3)' }}>
+          {t('tutor.desc')}
+        </p>
+        <div className="btn-row">
+          <button
+            className={`btn ${tutorOn ? '' : 'btn-primary'}`}
+            onClick={async () => {
+              if (tutorOn) {
+                await setTutorModeEnabled(false);
+                setTutorOn(false);
+              } else if (tutorPinSet) {
+                setPendingTutorEnable(true);
+                setTutorPinPad('enter');
+              } else {
+                await setTutorModeEnabled(true);
+                setTutorOn(true);
+              }
+            }}
+          >
+            {tutorOn ? `⏸ ${t('tutor.enable')}` : `▶ ${t('tutor.enable')}`}
+          </button>
+          {tutorPinSet ? (
+            <button
+              className="btn btn-sm btn-ghost"
+              onClick={async () => {
+                await setTutorPin(undefined);
+                setTutorPinSet(false);
+              }}
+            >
+              {t('tutor.pin.remove')}
+            </button>
+          ) : (
+            <button className="btn btn-sm" onClick={() => setTutorPinPad('new')}>
+              🔒 {t('tutor.pin.set')}
+            </button>
+          )}
+        </div>
+        <p className="faint" style={{ fontSize: '0.78rem', marginTop: 'var(--sp-2)' }}>
+          {tutorPinSet ? t('tutor.pin.protect') : t('tutor.desc')}
+        </p>
+      </section>
+
       {/* ---------- Sample data ---------- */}
       <section className="settings-group paper-card">
         <h2>🧪 Try it out</h2>
@@ -443,6 +525,36 @@ export function Settings() {
       </section>
 
       {/* ---------- Modals ---------- */}
+      {tutorPinPad && (
+        <PinPad
+          key={tutorPinPad}
+          title={tutorPinPad === 'new' ? t('tutor.pin.set') : t('tutor.pin.enter')}
+          onClose={() => {
+            setTutorPinPad(null);
+            setPendingTutorEnable(false);
+          }}
+          onComplete={async (pin) => {
+            try {
+              if (tutorPinPad === 'new') {
+                await setTutorPin(pin);
+                setTutorPinSet(true);
+                toast('🔒');
+              } else {
+                const p = await getTutorPin();
+                const ok = p.hash && p.salt ? await verifyPin(pin, p.hash, p.salt) : false;
+                if (ok && pendingTutorEnable) {
+                  await setTutorModeEnabled(true);
+                  setTutorOn(true);
+                }
+              }
+            } finally {
+              setTutorPinPad(null);
+              setPendingTutorEnable(false);
+            }
+          }}
+        />
+      )}
+
       {pinStep !== 'idle' && (
         <PinPad
           key={pinStep}

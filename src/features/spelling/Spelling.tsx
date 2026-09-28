@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
 import { applySpellingResult, listWords } from '../../db/repo';
+import { logProgressEvent } from '../../db/progressRepo';
 import {
   checkArrangement,
   filterPlayable,
@@ -17,6 +18,7 @@ import {
 } from '../../db/spelling';
 import { LEVEL_TAGS, type LevelTag } from '../../db/models';
 import { dayKey } from '../../db/time';
+import { peekPracticeFocus } from '../progress/practiceHandoff';
 import { LevelBadge } from '../../components/ui/Chips';
 import { useObjectUrl } from '../../hooks/useMisc';
 import type { Word } from '../../db/models';
@@ -325,6 +327,21 @@ function Summary({ rows, onRestart }: { rows: SummaryRow[]; onRestart: () => voi
 
 // ---------- main screen ----------
 
+/**
+ * Starts a focused session (Progress handoff) once the word list has loaded.
+ * The handoff is consumed only here — so a slow DB can never silently drop it.
+ */
+function AutoFocusStart({ words, focusIds, onStart, onDone }: { words: Word[]; focusIds: number[]; onStart: (pool: Word[]) => void; onDone: () => void }) {
+  useEffect(() => {
+    const pool = focusIds.map((id) => words.find((w) => w.id === id)).filter((w): w is Word => !!w && isSpellingEligible(w));
+    onDone();
+    if (pool.length > 0) onStart(orderPool(pool));
+    // else: fall through to the normal Setup screen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [words]);
+  return null;
+}
+
 export function Spelling() {
   const { profile } = useProfiles();
   const words = useLiveQuery(
@@ -337,6 +354,8 @@ export function Spelling() {
   /** Per-word tallies for the whole session (survives requeues). */
   const tallies = useRef(new Map<number, WordTally>());
   const [summary, setSummary] = useState<SummaryRow[] | null>(null);
+  /** Words handed over from the Progress tab — become the implicit pool. */
+  const focusIds = useRef<number[] | null>(peekPracticeFocus());
 
   const finished = queue !== null && cursor >= queue.length;
   const current = queue !== null && cursor < queue.length ? queue[cursor] : undefined;
@@ -361,9 +380,18 @@ export function Spelling() {
       void applySpellingResult(word.id!, { mistakes: tally, sessionDay: dayKey(Date.now()) }).catch(() => {
         /* storage hiccup should never break the game */
       });
+      // Progress logging (fire-and-forget, never alters game behaviour).
+      if (profile?.id != null) {
+        logProgressEvent(profile.id, {
+          type: 'spelling_attempt',
+          wordId: word.id,
+          meta: { correct: tally === 0, attemptsNeeded: tally + 1 },
+        });
+      }
       setCursor((c) => c + 1);
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [profile?.id],
   );
 
   const handleSolved = useCallback(
@@ -419,7 +447,11 @@ export function Spelling() {
         />
       ) : queue === null ? (
         words ? (
-          <Setup words={words} onStart={startSession} />
+          focusIds.current != null && focusIds.current.length > 0 && words ? (
+            <AutoFocusStart words={words} focusIds={focusIds.current} onStart={startSession} onDone={() => (focusIds.current = null)} />
+          ) : (
+            <Setup words={words} onStart={startSession} />
+          )
         ) : (
           <p className="hand" style={{ fontSize: '1.6rem', color: 'var(--ink-soft)', marginTop: 'var(--sp-5)' }}>
             Opening your notebook…

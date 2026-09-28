@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
 import { addLibraryWords, listWords } from '../../db/repo';
+import { logProgressEvent } from '../../db/progressRepo';
 import { LevelBadge } from '../../components/ui/Chips';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { useToast } from '../../components/ui/ToastProvider';
@@ -252,6 +253,12 @@ function WordListView({
       level,
     );
     setSelected([]);
+    // Progress logging: one word_added event per fresh word (fire-and-forget).
+    if (profile?.id != null && n > 0) {
+      for (let i = 0; i < n; i++) {
+        logProgressEvent(profile.id, { type: 'word_added', meta: { source: 'library' } });
+      }
+    }
     toast(
       n === 1
         ? `“${selectedAvailable[0].word}” added to your notebook! 🌱`

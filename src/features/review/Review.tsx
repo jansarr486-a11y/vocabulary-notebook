@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useProfiles } from '../../context/ProfileContext';
 import { applyReviewResult, listWords } from '../../db/repo';
+import { logProgressEvent } from '../../db/progressRepo';
 import { reviewScore } from '../../db/schedule';
 import { quizSettingsOf, type QuizAnswerMode, type Word } from '../../db/models';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { useObjectUrl } from '../../hooks/useMisc';
 import { buildQuizOptions, gradeQuizAnswer, makeRng, type BuiltQuiz, type QuizOption } from './quiz';
+import { takePracticeFocus } from '../progress/practiceHandoff';
 
 function buildDeck(words: Word[], size: number): Word[] {
   const now = Date.now();
@@ -86,7 +88,13 @@ export function Review() {
   // Build the deck once data arrives; rebuild on profile switch.
   useEffect(() => {
     if (words && deck === null && profile) {
-      setDeck(buildDeck(words, profile.settings.reviewDeckSize));
+      // Focused practice from the Progress tab: serve exactly those words.
+      const focus = takePracticeFocus();
+      const focused =
+        focus != null
+          ? focus.map((id) => words.find((w) => w.id === id)).filter((w): w is Word => !!w)
+          : null;
+      setDeck(focused && focused.length > 0 ? focused : buildDeck(words, profile.settings.reviewDeckSize));
       setCursor(0);
       setTally(EMPTY_TALLY);
       setSmallNotebook(false);
@@ -146,6 +154,14 @@ export function Review() {
     setElapsed(ms);
     setPicked(opt.key);
     void applyReviewResult(current.id!, grade);
+    // Progress logging (fire-and-forget, never alters quiz behaviour).
+    if (profile?.id != null) {
+      logProgressEvent(profile.id, {
+        type: 'review_answered',
+        wordId: current.id,
+        meta: { correct: opt.isCorrect, grade, responseTimeMs: ms },
+      });
+    }
     setTally((t) => ({
       ...t,
       [grade]: t[grade] + 1,

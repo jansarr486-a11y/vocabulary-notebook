@@ -90,6 +90,22 @@ export function IconSpelling({ className, size }: IconProps) {
   );
 }
 
+/** Progress tab — little sprout growing from a trend line. */
+export function IconProgress({ className, size }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M3.6 17.5 8.9 12l3.4 3.2 7-7.4" />
+      <path d="M15.4 7.6h4v4" />
+      <path d="M5.1 20.6c.2-1.5.8-2.6 2-3.3M6.9 21.2c.1-.8.4-1.4 1-1.9" opacity={0.55} />
+      <path
+        d="M4.4 3.2 5 4.5l1.3-.4-.8 1.1.6 1.3-1.3-.7-1 1-.1-1.4-1.3-.6 1.3-.5Z"
+        strokeWidth={1.2}
+        opacity={0.65}
+      />
+    </svg>
+  );
+}
+
 /** Settings tab — cog with a round centre. */
 export function IconSettings({ className, size }: IconProps) {
   return (

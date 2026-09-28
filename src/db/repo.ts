@@ -2,6 +2,7 @@ import { dayKey } from './time';
 import {
   createReview,
   createSpelling,
+  DEFAULT_WEEKLY_GOALS,
   defaultSettings,
   emptyProfileStats,
   emptySections,
@@ -14,6 +15,7 @@ import {
   type WordLibrarySource,
   type WordSection,
   type WordSpelling,
+  type WeeklyGoals,
 } from './models';
 import type { LibraryWord } from '../features/library/libraryData';
 import type { ReviewGrade } from './models';
@@ -346,6 +348,14 @@ export async function updateProfileAvatar(
 
 export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
   const words = await listWords(profile.id!);
+  const pid = profile.id!;
+  // v2 — include the progress stores so nothing is lost when moving devices.
+  const [events, snapshots, badges, goals] = await Promise.all([
+    db.events.where('profileId').equals(pid).toArray(),
+    db.snapshots.where('profileId').equals(pid).toArray(),
+    db.badges.where('profileId').equals(pid).toArray(),
+    getWeeklyGoals(pid),
+  ]);
   const backupWords: BackupWord[] = [];
   for (const w of words) {
     backupWords.push({
@@ -365,7 +375,7 @@ export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
   }
   return {
     app: 'vocabulary-notebook',
-    schema: 1,
+    schema: 2,
     exportedAt: Date.now(),
     profile: {
       name: profile.name,
@@ -375,6 +385,12 @@ export async function exportBackup(profile: Profile): Promise<BackupEnvelope> {
       avatarDataUrl: profile.avatarBlob ? await blobToDataUrl(profile.avatarBlob) : undefined,
     },
     words: backupWords,
+    progress: {
+      events: events.map(({ profileId: _p, schemaVersion: _s, id: _id, ...rest }) => rest),
+      snapshots: snapshots.map(({ profileId: _p, id: _id, ...rest }) => rest),
+      goals,
+      badges: badges.map((b) => ({ badgeId: b.badgeId, earnedAt: b.earnedAt })),
+    },
   };
 }
 
@@ -410,6 +426,26 @@ export async function importBackup(
       avatarMime: envelope.profile.avatarDataUrl.slice(5, envelope.profile.avatarDataUrl.indexOf(';')),
     });
   }
+  // v2 — restore the progress stores when present.
+  if (envelope.progress) {
+    try {
+      const { events, snapshots, goals, badges } = envelope.progress;
+      if (events?.length) {
+        await db.events.bulkAdd(
+          events.map((e) => ({ ...e, profileId: pid, schemaVersion: 1 })),
+        );
+      }
+      if (snapshots?.length) {
+        await db.snapshots.bulkAdd(snapshots.map((s) => ({ ...s, profileId: pid })));
+      }
+      if (goals) await saveWeeklyGoals(pid, goals);
+      if (badges?.length) {
+        await db.badges.bulkAdd(badges.map((b) => ({ ...b, profileId: pid })));
+      }
+    } catch {
+      /* progress restore is best-effort; words always come first */
+    }
+  }
   for (const bw of envelope.words) {
     const word: Word = {
       profileId: pid,
@@ -435,6 +471,17 @@ export async function importBackup(
 }
 
 // ---------- meta (app-level pointers) ----------
+
+const GOALS_KEY = (profileId: number) => `weeklyGoals:${profileId}`;
+
+/** Weekly mastering/writing goals for the Progress tab (defaults until edited). */
+export async function getWeeklyGoals(profileId: number): Promise<WeeklyGoals> {
+  return (await getMeta<WeeklyGoals>(GOALS_KEY(profileId))) ?? { ...DEFAULT_WEEKLY_GOALS };
+}
+
+export async function saveWeeklyGoals(profileId: number, goals: WeeklyGoals): Promise<void> {
+  await setMeta(GOALS_KEY(profileId), goals);
+}
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {
   const row = await db.meta.get(key);

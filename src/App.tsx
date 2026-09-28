@@ -12,7 +12,9 @@ import { WordCard } from './features/notebook/WordCard';
 import { Library } from './features/library/Library';
 import { Review } from './features/review/Review';
 import { Spelling } from './features/spelling/Spelling';
+import { Progress } from './features/progress/Progress';
 import { Settings } from './features/settings/Settings';
+import { I18nProvider } from './i18n';
 
 /** Registers the service worker; checks for updates hourly while open. */
 function PwaUpdater() {
@@ -79,6 +81,7 @@ function AppRoutes() {
           <Route path="/library/:collectionId/:bookId" element={<Library />} />
           <Route path="/review" element={<Review />} />
           <Route path="/spelling" element={<Spelling />} />
+          <Route path="/progress" element={<Progress />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -89,14 +92,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <ProfileProvider>
-        <HashRouter>
-          <PwaUpdater />
-          <PwaToasts />
-          <AppRoutes />
-        </HashRouter>
-      </ProfileProvider>
-    </ToastProvider>
+    <I18nProvider>
+      <ToastProvider>
+        <ProfileProvider>
+          <HashRouter>
+            <PwaUpdater />
+            <PwaToasts />
+            <AppRoutes />
+          </HashRouter>
+        </ProfileProvider>
+      </ToastProvider>
+    </I18nProvider>
   );
 }

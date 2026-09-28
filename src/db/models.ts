@@ -157,6 +157,11 @@ export interface Word {
   schemaVersion: number;
 }
 
+export interface BackupBadge {
+  badgeId: string;
+  earnedAt: number;
+}
+
 /** Envelope for full JSON export/import (backup + device migration). */
 export interface BackupWord {
   id?: number;
@@ -188,6 +193,132 @@ export interface BackupEnvelope {
     avatarDataUrl?: string;
   };
   words: BackupWord[];
+  /** Added in v2 — progress history; absent on older backups. */
+  progress?: {
+    events: Omit<ProgressEvent, 'id' | 'profileId' | 'schemaVersion'>[];
+    snapshots: Omit<DailySnapshot, 'id' | 'profileId'>[];
+    goals?: WeeklyGoals;
+    badges: BackupBadge[];
+  };
+}
+
+// ---------- progress tracking (added in v2) ----------
+
+/** One learning action, appended by every feature (Notebook/Review/Spelling/Library). */
+export type ProgressEventType =
+  | 'word_added' // meta: { source: 'manual' | 'library' }
+  | 'section_completed' // meta: { sectionNumber: 1 | 2 | 3 | 4 }
+  | 'own_sentence_written' // fired together with section_completed when sectionNumber === 3
+  | 'review_answered' // meta: { correct: boolean; grade: ReviewGrade; responseTimeMs: number }
+  | 'spelling_attempt' // meta: { correct: boolean; attemptsNeeded: number }
+  | 'word_mastered'; // appended when a word first meets the honest mastered rule
+
+export interface ProgressEvent {
+  id?: number;
+  profileId: number;
+  timestamp: number;
+  type: ProgressEventType;
+  wordId?: number;
+  meta?: Record<string, unknown>;
+  schemaVersion: number;
+}
+
+export interface SnapshotCounts {
+  new: number;
+  learning: number;
+  review: number;
+  mastered: number;
+  /** Mastered by SRS but without production proof — shown separately, never merged into mastered. */
+  recognized: number;
+}
+
+/** One per local day; powers the charts. Rebuilt from events + word states. */
+export interface DailySnapshot {
+  id?: number;
+  profileId: number;
+  date: string; // 'YYYY-MM-DD' local
+  counts: SnapshotCounts;
+  totalWords: number;
+  reviewsDone: number;
+  /** 0..1; undefined when no reviews that day (a gap, never a fake 0). */
+  reviewAccuracy?: number;
+  sentencesWritten: number;
+  /** First-attempt spelling accuracy 0..1; undefined when no attempts. */
+  spellingAccuracy?: number;
+  activeToday: boolean;
+}
+
+/** Weekly mastering/writing goals — editable in the Progress tab. */
+export interface WeeklyGoals {
+  masteredPerWeek: number;
+  sentencesPerWeek: number;
+}
+
+export const DEFAULT_WEEKLY_GOALS: WeeklyGoals = { masteredPerWeek: 5, sentencesPerWeek: 3 };
+
+export interface ProgressBadgeState {
+  id?: number;
+  profileId: number;
+  badgeId: string;
+  earnedAt: number;
+}
+
+/** Struggling-word entry inside a shared progress report. */
+export interface ReportStruggleWord {
+  word: string;
+  wrongCount: number;
+  spellingDifficulty?: number;
+}
+
+/**
+ * The JSON report a student hands to their tutor (Part 3). Deliberately
+ * compact and self-describing; contains NO written sentences unless the
+ * student explicitly opted in via `bestSentences`.
+ */
+export interface ProgressReport {
+  app: 'vocabulary-notebook-progress';
+  version: 1;
+  studentName: string;
+  generatedAt: number;
+  range: { from: string; to: string };
+  totals: { words: number; mastered: number; recognized: number };
+  activeDaysThisWeek: number;
+  streakDays: number;
+  weeklyGoal: {
+    masteredGoal: number;
+    sentencesGoal: number;
+    masteredDone: number;
+    sentencesDone: number;
+    completed: boolean;
+  };
+  skills: {
+    /** All 0..1 or undefined (not enough data). */
+    retention?: number;
+    recognition?: number;
+    spelling?: number;
+    /** Own sentences per 10 words, capped at 1 for the shared bar scale. */
+    writing?: number;
+    /** Raw sample sizes so the tutor can apply the minimum-sample rule too. */
+    samples: { retention: number; recognition: number; spelling: number; words: number };
+  };
+  daily: {
+    date: string;
+    active: boolean;
+    reviewsDone: number;
+    reviewAccuracy?: number;
+    sentencesWritten: number;
+    counts: SnapshotCounts;
+  }[];
+  strugglingWords: ReportStruggleWord[];
+  bookCoverage: { bookTitle: string; bookId?: string; added: number; mastered: number }[];
+  bestSentences?: { word: string; text: string }[];
+}
+
+/** A student report imported into the tutor's device. */
+export interface TutorReport {
+  id?: number;
+  importedAt: number;
+  report: ProgressReport;
 }
 
 export const DEFAULT_INTERVALS: ScheduleIntervals = { s1: 0, s2: 2, s3: 4, s4: null };
