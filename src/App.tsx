@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { ProfileProvider, useProfiles } from './context/ProfileContext';
 import { ToastProvider, useToast } from './components/ui/ToastProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppHeader } from './components/AppHeader';
 import { ProfileGate } from './features/profiles/ProfileGate';
 import { PinUnlock } from './features/profiles/PinUnlock';
@@ -69,7 +70,7 @@ function AppRoutes() {
     return status === 'pin' ? <PinUnlock /> : <ProfileGate />;
   }
   return (
-    <>
+    <ErrorBoundary>
       <AppHeader />
       <main className="app-main">
         <Routes>
@@ -86,22 +87,24 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-    </>
+    </ErrorBoundary>
   );
 }
 
 export default function App() {
   return (
-    <I18nProvider>
-      <ToastProvider>
-        <ProfileProvider>
-          <HashRouter>
-            <PwaUpdater />
-            <PwaToasts />
-            <AppRoutes />
-          </HashRouter>
-        </ProfileProvider>
-      </ToastProvider>
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <ToastProvider>
+          <ProfileProvider>
+            <HashRouter>
+              <PwaUpdater />
+              <PwaToasts />
+              <AppRoutes />
+            </HashRouter>
+          </ProfileProvider>
+        </ToastProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }

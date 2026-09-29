@@ -11,9 +11,24 @@ import { useObjectUrl } from '../../hooks/useMisc';
 import { buildQuizOptions, gradeQuizAnswer, makeRng, type BuiltQuiz, type QuizOption } from './quiz';
 import { takePracticeFocus } from '../progress/practiceHandoff';
 
+/** True when `v` looks like a review-state object with usable fields. */
+function isReviewState(v: unknown): v is { lastReviewedAt?: number; weight: number; pressure: number } {
+  return (
+    v != null &&
+    typeof v === 'object' &&
+    typeof (v as { weight?: unknown }).weight === 'number' &&
+    typeof (v as { pressure?: unknown }).pressure === 'number'
+  );
+}
+
 function buildDeck(words: Word[], size: number): Word[] {
   const now = Date.now();
-  const eligible = words.filter((w) => w.sections.some((s) => s.completedAt != null));
+  const eligible = words.filter(
+    (w) =>
+      Array.isArray(w?.sections) &&
+      w.sections.some((s) => s?.completedAt != null) &&
+      isReviewState(w.review),
+  );
   const scored = eligible
     .map((w) => ({ w, score: reviewScore(w.review, now) }))
     .sort((a, b) => b.score - a.score)
@@ -72,7 +87,9 @@ export function Review() {
   const wordsRef = useRef<Word[]>([]);
 
   useEffect(() => {
-    if (words) wordsRef.current = words;
+    // Keep only well-formed rows — a malformed legacy row must never be able
+    // to crash quiz building (answerText reads sections[0] unguarded).
+    if (words) wordsRef.current = words.filter((w) => Array.isArray(w?.sections));
   }, [words]);
 
   const current = deck && cursor < deck.length ? deck[cursor] : undefined;
@@ -194,7 +211,7 @@ export function Review() {
   const sec3 = current?.sections[2];
   const sec4 = current?.sections[3];
   const hasAnyCompleted = useMemo(
-    () => words?.some((w) => w.sections.some((s) => s.completedAt != null)) ?? false,
+    () => words?.some((w) => Array.isArray(w?.sections) && w.sections.some((s) => s?.completedAt != null)) ?? false,
     [words],
   );
   const pickedOpt = quiz?.options.find((o) => o.key === picked);

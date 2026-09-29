@@ -49,6 +49,12 @@
         }
 
         function manualHelp(offline) {
+          var lastErr = null;
+          try {
+            lastErr = localStorage.getItem('vn:last-error');
+          } catch (e) {
+            /* noop */
+          }
           msg(
             '<h1 style="font-size:1.3rem;margin-bottom:.5rem">' +
               (offline ? 'You seem to be offline' : 'Having trouble loading') +
@@ -61,7 +67,10 @@
               '</p>' +
               (offline
                 ? ''
-                : '<p><a href="./recover.html" style="color:#c96f4a">Open repair page →</a></p>')
+                : '<p><a href="./recover.html" style="color:#c96f4a">Open repair page →</a></p>') +
+              (lastErr
+                ? '<p style="word-break:break-word;font-size:.8rem;opacity:.75">Last error: ' + lastErr + '</p>'
+                : '')
           );
         }
 
@@ -169,6 +178,33 @@
         } catch (e) {
           /* noop */
         }
+
+        // Global error trap: never leave a truly blank page — if the app
+        // fails before mounting, show the error itself plus the repair path.
+        window.addEventListener('error', function (e) {
+          try {
+            var el = document.getElementById('root');
+            if (!el || el.children.length > 0) return;
+            var detail = (e && e.message) || 'Unknown script error';
+            if (e && e.filename) {
+              detail += ' (' + String(e.filename).split('/').pop() + ':' + (e.lineno || '?') + ')';
+            }
+            try {
+              localStorage.setItem('vn:last-error', detail);
+            } catch (err) {
+              /* noop */
+            }
+            msg(
+              '<h1 style="font-size:1.3rem;margin-bottom:.5rem">The notebook hit an error</h1>' +
+                '<p style="word-break:break-word;font-size:.9rem;background:#fff;border:1px solid #e5dcc9;border-radius:8px;padding:.5rem">' +
+                detail +
+                '</p>' +
+                '<p><a href="./recover.html" style="color:#c96f4a">Open repair page →</a></p>'
+            );
+          } catch (err) {
+            /* noop */
+          }
+        });
 
         // Arm the watchdog on every load: main.tsx stands it down when React
         // mounts. (Not gated on navigator.serviceWorker.controller — after a
