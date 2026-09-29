@@ -16,6 +16,37 @@ export const en: Record<string, string> = {
   'lang.en': 'English',
   'lang.fa': 'فارسی',
 
+  // ---------- onboarding tour ----------
+  'onb.langPrompt': 'Choose your language',
+  'onb.langPromptFa': 'زبان خود را انتخاب کنید',
+  'onb.welcome': 'Welcome!',
+  'onb.welcome.body':
+    'This is your personal space to collect and practice every new English word your teacher gives you.',
+  'onb.credit': 'Developed by mohammad salehzadeh',
+  'onb.purpose.title': 'Your own word notebook',
+  'onb.purpose.body':
+    'This isn’t a dictionary or a course — it’s your notebook for the words your tutor teaches you in class. You add them, practice them, and never forget them.',
+  'onb.tabs.title': 'A quick look around',
+  'onb.tab.today': 'Your daily to-do list of words',
+  'onb.tab.notebook': 'Every word you’ve ever added',
+  'onb.tab.library': 'Ready-made word lists from your tutor',
+  'onb.tab.review': 'Quick quizzes so words stick in memory',
+  'onb.tab.spelling': 'A letter puzzle game for tricky spellings',
+  'onb.tab.progress': 'See how much you’ve learned over time',
+  'onb.cycle.title': 'How learning works',
+  'onb.cycle.add': 'Add a word',
+  'onb.cycle.wait': 'Wait a couple days',
+  'onb.cycle.review': 'Review it',
+  'onb.cycle.forever': 'It’s yours forever',
+  'onb.go.title': 'You’re ready! 🎉',
+  'onb.go.body': 'Let’s pick up your first words and start your notebook.',
+  'onb.start': 'Start my notebook',
+  'onb.back': 'Back',
+  'onb.next': 'Next',
+  'onb.skip': 'Skip',
+  'onb.step': 'Step {n} of {total}',
+  'settings.replayTour': 'Replay welcome tour',
+
   // ---------- progress: header ----------
   'progress.title': 'My Progress',
   'progress.subtitle': 'Everything below is computed on this device — honest numbers only.',

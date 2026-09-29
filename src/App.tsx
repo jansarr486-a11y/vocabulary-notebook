@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { ProfileProvider, useProfiles } from './context/ProfileContext';
 import { ToastProvider, useToast } from './components/ui/ToastProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { Onboarding } from './components/Onboarding';
 import { AppHeader } from './components/AppHeader';
 import { ProfileGate } from './features/profiles/ProfileGate';
 import { PinUnlock } from './features/profiles/PinUnlock';
@@ -55,6 +56,20 @@ function PwaToasts() {
   return null;
 }
 
+/**
+ * First-run welcome tour: shown once per profile, after creation, before the
+ * first dashboard view. Finishing/skipping stores hasSeenOnboarding on the
+ * profile, so it never auto-shows for that profile again. (Replay lives in
+ * Settings and does not touch the flag.)
+ */
+function OnboardingGate() {
+  const { profile } = useProfiles();
+  const [done, setDone] = useState(false);
+  if (done) return null;
+  if (!profile || profile.hasSeenOnboarding !== false) return null;
+  return <Onboarding onFinish={() => setDone(true)} />;
+}
+
 function AppRoutes() {
   const { status } = useProfiles();
   if (status === 'loading') {
@@ -71,6 +86,7 @@ function AppRoutes() {
   }
   return (
     <ErrorBoundary>
+      <OnboardingGate />
       <AppHeader />
       <main className="app-main">
         <Routes>

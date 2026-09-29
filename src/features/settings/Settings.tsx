@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProfiles } from '../../context/ProfileContext';
 import { Modal } from '../../components/ui/Modal';
+import { Onboarding } from '../../components/Onboarding';
 import { useToast } from '../../components/ui/ToastProvider';
 import { PinPad } from '../../components/ui/PinPad';
 import { AvatarPicker } from '../../components/ui/AvatarPicker';
@@ -9,7 +10,7 @@ import { hashPin, verifyPin } from '../../db/pin';
 import { exportPdf, downloadJsonBackup, buildProgressSummary, shareOrCopySummary } from '../exports/exporters';
 import { loadSamplePack } from './sampleData';
 import { DEFAULT_QUIZ_SETTINGS, type BackupEnvelope, type QuizAnswerMode } from '../../db/models';
-import { useI18n, LANGS, type Lang } from '../../i18n';
+import { useI18n, Ltr, LANGS, type Lang } from '../../i18n';
 import {
   tutorModeEnabled,
   setTutorModeEnabled,
@@ -54,6 +55,7 @@ export function Settings() {
   const pendingPin = useRef('');
 
   const [confirmDeleteProfile, setConfirmDeleteProfile] = useState(false);
+  const [replayTour, setReplayTour] = useState(false);
   const [importing, setImporting] = useState<BackupEnvelope | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -499,6 +501,17 @@ export function Settings() {
         </p>
       </section>
 
+      {/* ---------- Welcome tour replay ---------- */}
+      <section className="settings-group paper-card">
+        <h2>👋 {t('onb.welcome')}</h2>
+        <p className="muted" style={{ marginBottom: 'var(--sp-3)' }}>
+          {t('onb.purpose.body')}
+        </p>
+        <button className="btn" onClick={() => setReplayTour(true)}>
+          {t('settings.replayTour')}
+        </button>
+      </section>
+
       {/* ---------- Sample data ---------- */}
       <section className="settings-group paper-card">
         <h2>🧪 Try it out</h2>
@@ -615,6 +628,14 @@ export function Settings() {
           </p>
         </Modal>
       )}
+
+      {replayTour && (
+        <Onboarding replay onFinish={() => setReplayTour(false)} />
+      )}
+
+      <footer className="credit-footer">
+        <Ltr>Developed by mohammad salehzadeh</Ltr>
+      </footer>
     </div>
   );
 }

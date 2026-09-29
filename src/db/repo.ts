@@ -54,6 +54,7 @@ export async function createProfile(
     stats: emptyProfileStats(),
     avatarBlob: avatar?.blob,
     avatarMime: avatar?.mime,
+    hasSeenOnboarding: false, // fresh profiles see the welcome tour once
     schemaVersion: 1,
   };
   profile.id = await db.profiles.add(profile);

@@ -101,6 +101,12 @@ export interface Profile {
   /** Added in v1.3 — optional profile picture, absent on older rows. */
   avatarBlob?: Blob;
   avatarMime?: string;
+  /**
+   * Onboarding tour gate. Absent on profiles created before the tour existed
+   * (they are never ambushed); explicitly false only on freshly created ones,
+   * which then see the welcome tour once before the first dashboard view.
+   */
+  hasSeenOnboarding?: boolean;
   schemaVersion: number;
 }
 
