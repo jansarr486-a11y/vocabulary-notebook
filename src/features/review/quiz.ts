@@ -45,11 +45,34 @@ export function shuffled<T>(items: readonly T[], rng: () => number): T[] {
 }
 
 /**
+ * A distractor chip must be real content: at least 2 characters including a
+ * letter or number. Guards against junk that snuck into completed sections
+ * (a stray "x" or "-") being served as a plausible answer choice.
+ */
+function isSaneAnswerText(t: string): boolean {
+  return t.length >= 2 && /[\p{L}\p{N}]/u.test(t);
+}
+
+/**
  * A word is eligible as a distractor source once its meaning is known —
- * i.e. the definition section (1) has been completed in the learning cycle.
+ * i.e. the definition section (1) is completed with real, sane text.
  */
 export function isDistractorEligible(w: Word): boolean {
-  return w.sections[0]?.completedAt != null && (w.sections[0]?.text ?? '').trim().length > 0;
+  return w.sections[0]?.completedAt != null && isSaneAnswerText((w.sections[0]?.text ?? '').trim());
+}
+
+/**
+ * Can this word be quizzed at all in the given answer mode — i.e. does a
+ * correct-answer chip exist for it? Used by the Review deck builder so a
+ * word that cannot be served never enters the deck (it would otherwise be
+ * skipped silently, and an all-unservable deck showed "Reviewed 0 cards").
+ * Tolerates corrupted rows (missing/short sections) without throwing.
+ */
+export function isQuizServable(w: Word, mode: QuizAnswerMode): boolean {
+  if (!w || !Array.isArray(w.sections)) return false;
+  if (mode === 'persian') return isSaneAnswerText((w.persianMeaning ?? '').trim());
+  const s1 = w.sections[0];
+  return s1?.completedAt != null && isSaneAnswerText((s1.text ?? '').trim());
 }
 
 /** The text shown on an option chip for a given answer mode. */
@@ -111,7 +134,7 @@ export function buildQuizOptions(
   const distractors = pickDistractorWords(target, allWords, mode, rng);
   const distractorTexts = distractors
     .map((w) => answerText(w, mode))
-    .filter((t) => t && t !== correct);
+    .filter((t) => t && t !== correct && isSaneAnswerText(t));
 
   const optionCount = Math.min(4, 1 + distractorTexts.length);
   if (optionCount < 2) return null;

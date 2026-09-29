@@ -319,7 +319,8 @@ export async function applyReviewResult(
 ): Promise<void> {
   const w = await db.words.get(wordId);
   if (!w) return;
-  w.review = applyReviewRating(w.review, rating, now);
+  // Tolerate corrupted rows (missing review state) instead of crashing mid-quiz.
+  w.review = applyReviewRating(w.review ?? createReview(), rating, now);
   await db.words.put(w);
 }
 

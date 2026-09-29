@@ -8,7 +8,7 @@ import { reviewScore } from '../../db/schedule';
 import { quizSettingsOf, type QuizAnswerMode, type Word } from '../../db/models';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { useObjectUrl } from '../../hooks/useMisc';
-import { buildQuizOptions, gradeQuizAnswer, makeRng, type BuiltQuiz, type QuizOption } from './quiz';
+import { buildQuizOptions, gradeQuizAnswer, isQuizServable, makeRng, type BuiltQuiz, type QuizOption } from './quiz';
 import { takePracticeFocus } from '../progress/practiceHandoff';
 
 /** True when `v` looks like a review-state object with usable fields. */
@@ -21,13 +21,12 @@ function isReviewState(v: unknown): v is { lastReviewedAt?: number; weight: numb
   );
 }
 
-function buildDeck(words: Word[], size: number): Word[] {
+function buildDeck(words: Word[], size: number, mode: QuizAnswerMode): Word[] {
   const now = Date.now();
+  // Only words that can actually be served a quiz card in this answer mode —
+  // otherwise they get skipped silently mid-session ("Reviewed 0 cards").
   const eligible = words.filter(
-    (w) =>
-      Array.isArray(w?.sections) &&
-      w.sections.some((s) => s?.completedAt != null) &&
-      isReviewState(w.review),
+    (w) => isQuizServable(w, mode) && isReviewState(w.review),
   );
   const scored = eligible
     .map((w) => ({ w, score: reviewScore(w.review, now) }))
@@ -107,15 +106,19 @@ export function Review() {
     if (words && deck === null && profile) {
       // Focused practice from the Progress tab: serve exactly those words.
       const focus = takePracticeFocus();
+      const qs = quizSettingsOf(profile.settings);
       const focused =
         focus != null
           ? focus.map((id) => words.find((w) => w.id === id)).filter((w): w is Word => !!w)
           : null;
-      setDeck(focused && focused.length > 0 ? focused : buildDeck(words, profile.settings.reviewDeckSize));
+      setDeck(
+        focused && focused.length > 0
+          ? focused.filter((w) => isQuizServable(w, qs.answerMode))
+          : buildDeck(words, profile.settings.reviewDeckSize, qs.answerMode),
+      );
       setCursor(0);
       setTally(EMPTY_TALLY);
       setSmallNotebook(false);
-      const qs = quizSettingsOf(profile.settings);
       setSessionCfg({ mode: qs.answerMode, easyUnderMs: qs.easyUnderMs, goodUnderMs: qs.goodUnderMs });
       setAppearance((a) => a + 1);
     }
@@ -197,11 +200,11 @@ export function Review() {
 
   const restart = () => {
     if (!words || !profile) return;
-    setDeck(buildDeck(words, profile.settings.reviewDeckSize));
+    const qs = quizSettingsOf(profile.settings);
+    setDeck(buildDeck(words, profile.settings.reviewDeckSize, qs.answerMode));
     setCursor(0);
     setTally(EMPTY_TALLY);
     setSmallNotebook(false);
-    const qs = quizSettingsOf(profile.settings);
     setSessionCfg({ mode: qs.answerMode, easyUnderMs: qs.easyUnderMs, goodUnderMs: qs.goodUnderMs });
     setAppearance((a) => a + 1);
   };
@@ -249,6 +252,17 @@ export function Review() {
           Shuffling the deck…
         </p>
       ) : finished ? (
+        tally.again + tally.hard + tally.good + tally.easy === 0 ? (
+          // Deck was empty (nothing servable) — never claim "Reviewed 0 cards".
+          <div className="empty-state" style={{ marginTop: 'var(--sp-5)' }}>
+            <span className="doodle">🃏</span>
+            <h3>Nothing to review right now</h3>
+            <p>Words appear here once at least their definition section is finished.</p>
+            <Link to="/notebook" className="btn btn-primary" style={{ marginTop: 'var(--sp-3)' }}>
+              📓 Go to my notebook
+            </Link>
+          </div>
+        ) : (
         <div className="paper-card washi" style={{ marginTop: 'var(--sp-5)', textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-3)' }}>Session done! 🎉</h2>
           <p>
@@ -275,6 +289,7 @@ export function Review() {
             </Link>
           </div>
         </div>
+        )
       ) : (
         <>
           <p className="review-counter" style={{ marginTop: 'var(--sp-4)' }}>

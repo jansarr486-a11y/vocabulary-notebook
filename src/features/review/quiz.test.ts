@@ -3,6 +3,7 @@ import {
   buildQuizOptions,
   gradeQuizAnswer,
   isDistractorEligible,
+  isQuizServable,
   makeRng,
   pickDistractorWords,
   shuffled,
@@ -52,8 +53,8 @@ const NOTEBOOK = [
 
 describe('isDistractorEligible', () => {
   it('requires a completed definition section', () => {
-    expect(isDistractorEligible(mkWord(9, 'done', { def: 'x' }))).toBe(true);
-    expect(isDistractorEligible(mkWord(10, 'undone', { def: 'x', defDone: false }))).toBe(false);
+    expect(isDistractorEligible(mkWord(9, 'done', { def: 'a real definition' }))).toBe(true);
+    expect(isDistractorEligible(mkWord(10, 'undone', { def: 'a real definition', defDone: false }))).toBe(false);
   });
 
   it('requires non-empty definition text', () => {
@@ -147,6 +148,46 @@ describe('buildQuizOptions', () => {
     const blank = mkWord(1, 'blank', { def: '', persian: undefined });
     expect(buildQuizOptions(blank, NOTEBOOK, 'definition', rng)).toBeNull();
     expect(buildQuizOptions(blank, NOTEBOOK, 'persian', rng)).toBeNull();
+  });
+});
+
+describe('isQuizServable', () => {
+  it('admits a word with a completed, real definition', () => {
+    expect(isQuizServable(mkWord(30, 'ok', { def: 'a real definition' }), 'definition')).toBe(true);
+  });
+
+  it('rejects junk (1-char), blank or incomplete definitions', () => {
+    expect(isQuizServable(mkWord(31, 'junk', { def: 'x' }), 'definition')).toBe(false);
+    expect(isQuizServable(mkWord(32, 'blank', { def: '' }), 'definition')).toBe(false);
+    expect(isQuizServable(mkWord(33, 'undone', { def: 'looks fine', defDone: false }), 'definition')).toBe(false);
+  });
+
+  it('tolerates corrupted rows (sections missing) without throwing', () => {
+    const broken = { ...mkWord(34, 'broken', { def: 'fine' }), sections: undefined } as unknown as Word;
+    expect(() => isQuizServable(broken, 'definition')).not.toThrow();
+    expect(isQuizServable(broken, 'definition')).toBe(false);
+  });
+
+  it('persian mode requires a usable persian meaning', () => {
+    expect(isQuizServable(mkWord(35, 'fa', { def: 'd', persian: 'معنی' }), 'persian')).toBe(true);
+    expect(isQuizServable(mkWord(36, 'fa', { def: 'd' }), 'persian')).toBe(false);
+  });
+});
+
+describe('junk distractor filtering', () => {
+  it('never serves 1-character junk chips as answer options', () => {
+    const junky = [
+      TARGET,
+      mkWord(2, 'ample', { pos: 'adjective', def: 'enough or more than enough.' }),
+      mkWord(40, 'junk1', { pos: 'adjective', def: 'x' }),
+      mkWord(41, 'junk2', { pos: 'adjective', def: '-' }),
+    ];
+    for (let seed = 0; seed < 30; seed++) {
+      const q = buildQuizOptions(TARGET, junky, 'definition', makeRng(seed))!;
+      expect(
+        q.options.every((o) => o.label.length >= 2 && /[\p{L}\p{N}]/u.test(o.label)),
+      ).toBe(true);
+    }
   });
 });
 
