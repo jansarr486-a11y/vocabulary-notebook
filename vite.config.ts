@@ -34,10 +34,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        // The bundled word library (9,000+ entries across four books) pushes
+        // The bundled word library (12,000+ entries across six books) pushes
         // the main JS chunk past smaller limits — raise the precache ceiling
         // to keep the app fully offline-capable.
-        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
         // Keep the standalone repair page out of the SPA fallback so it can
         // be loaded even when the app shell itself is broken.
