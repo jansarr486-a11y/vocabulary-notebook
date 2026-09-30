@@ -10,6 +10,9 @@ import { hashPin, verifyPin } from '../../db/pin';
 import { exportPdf, downloadJsonBackup, buildProgressSummary, shareOrCopySummary } from '../exports/exporters';
 import { loadSamplePack } from './sampleData';
 import { DEFAULT_QUIZ_SETTINGS, type BackupEnvelope, type QuizAnswerMode } from '../../db/models';
+import pkg from '../../../package.json';
+
+const APP_VERSION = pkg.version;
 import { useI18n, Ltr, LANGS, type Lang } from '../../i18n';
 import {
   tutorModeEnabled,
@@ -628,6 +631,24 @@ export function Settings() {
           </p>
         </Modal>
       )}
+
+      {/* ---------- About ---------- */}
+      <section className="settings-group paper-card about-card">
+        <h2>ℹ️ {t('about.title')}</h2>
+        <p className="muted" style={{ marginBottom: 'var(--sp-3)' }}>
+          {t('about.desc')}
+        </p>
+        <p className="about-version">
+          {t('about.version')}: <Ltr>{APP_VERSION}</Ltr>
+        </p>
+        <div className="about-feedback">
+          <h3>{t('about.feedback.title')}</h3>
+          <p className="muted">{t('about.feedback.body')}</p>
+          <a className="btn btn-primary" href="mailto:sssalehm13@gmail.com?subject=Vocabulary%20Notebook%20feedback">
+            {t('about.feedback.button')} — <Ltr>sssalehm13@gmail.com</Ltr>
+          </a>
+        </div>
+      </section>
 
       {replayTour && (
         <Onboarding replay onFinish={() => setReplayTour(false)} />

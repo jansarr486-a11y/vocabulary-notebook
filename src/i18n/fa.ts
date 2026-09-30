@@ -47,6 +47,14 @@ export const fa: Record<string, string> = {
   'onb.step': 'گام {n} از {total}',
   'settings.replayTour': 'اجرای دوبارهٔ تور خوش‌آمد',
 
+  // ---------- about ----------
+  'about.title': 'دربارهٔ برنامه',
+  'about.desc': 'دفترچه‌ای شخصی برای واژه‌های انگلیسی — کاملاً آفلاین کار می‌کند و برای آموزش زبان طراحی شده.',
+  'about.version': 'نسخه',
+  'about.feedback.title': 'انتقادها و پیشنهادها',
+  'about.feedback.body': 'ایرادی پیدا کردی یا ایده‌ای برای بهترشدن دفترچه داری؟ برای ما بنویس — هر پیامی خوانده می‌شود:',
+  'about.feedback.button': '📧 ارسال نظر',
+
   // ---------- progress: header ----------
   'progress.title': 'پیشرفت من',
   'progress.subtitle': 'همهٔ این اعداد روی همین دستگاه محاسبه می‌شوند — فقط آمار صادقانه.',
