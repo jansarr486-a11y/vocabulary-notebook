@@ -21,11 +21,13 @@ import { dayKey } from '../../db/time';
 import { peekPracticeFocus } from '../progress/practiceHandoff';
 import { LevelBadge } from '../../components/ui/Chips';
 import { useObjectUrl } from '../../hooks/useMisc';
+import { useI18n } from '../../i18n';
 import type { Word } from '../../db/models';
 
 // ---------- setup screen ----------
 
 function Setup({ words, onStart }: { words: Word[]; onStart: (pool: Word[]) => void }) {
+  const { t } = useI18n();
   const [levelFilter, setLevelFilter] = useState<LevelTag[]>([]);
   const [courseQuery, setCourseQuery] = useState('');
 
@@ -42,14 +44,11 @@ function Setup({ words, onStart }: { words: Word[]; onStart: (pool: Word[]) => v
 
   return (
     <div>
-      <p className="muted">
-        Rebuild the word from its meaning. Words you keep misspelling come back more often —
-        everything stays on this device.
-      </p>
+      <p className="muted">{t('sp.subtitle')}</p>
 
       <div className="paper-card washi" style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-5)' }}>
         <div className="field" style={{ marginBottom: 'var(--sp-4)' }}>
-          <label>Practice from levels</label>
+          <label>{t('sp.fromLevels')}</label>
           <div className="chip-row">
             {LEVEL_TAGS.map((tag) => {
               const on = levelFilter.includes(tag);
@@ -70,14 +69,14 @@ function Setup({ words, onStart }: { words: Word[]; onStart: (pool: Word[]) => v
           </div>
         </div>
         <div className="field">
-          <label>…or narrow by term / course</label>
+          <label>{t('sp.orNarrow')}</label>
           <input
             className="input"
-            placeholder="e.g. Term 1 — Fall 2026"
+            placeholder={t('sp.coursePlaceholder')}
             value={courseQuery}
             onChange={(e) => setCourseQuery(e.target.value)}
             list="spelling-terms"
-            aria-label="Filter by course or term"
+            aria-label={t('sp.courseAria')}
           />
           <datalist id="spelling-terms">
             {allTerms.map((t) => (
@@ -90,14 +89,14 @@ function Setup({ words, onStart }: { words: Word[]; onStart: (pool: Word[]) => v
       {playable.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 'var(--sp-5)' }}>
           <span className="doodle">🧩</span>
-          <h3>{anyEligible ? 'No words match' : 'Not ready yet'}</h3>
+          <h3>{anyEligible ? t('sp.noMatch') : t('sp.notReady')}</h3>
           <p>
             {anyEligible
-              ? 'Try clearing the level and term filters.'
-              : 'A word joins the puzzle pool once its dictionary definition (section 1) is complete.'}
+              ? t('sp.noMatchBody')
+              : t('sp.notReadyBody')}
           </p>
           <Link to="/notebook" className="btn btn-primary" style={{ marginTop: 'var(--sp-3)' }}>
-            📓 Go to my notebook
+            {t('rv.goNotebook')}
           </Link>
         </div>
       ) : (
@@ -107,11 +106,11 @@ function Setup({ words, onStart }: { words: Word[]; onStart: (pool: Word[]) => v
             style={{ fontSize: '1.1rem', padding: '0 var(--sp-6)' }}
             onClick={() => onStart(orderPool(playable))}
           >
-            🧩 Start puzzling — {playable.length} word{playable.length === 1 ? '' : 's'}
+            {t('sp.start', { n: playable.length })}
           </button>
           {playable.some((w) => spellingDifficulty(w) > 0) && (
             <p className="faint" style={{ marginTop: 'var(--sp-2)', fontSize: '0.85rem' }}>
-              Tricky words lead the way.
+              {t('sp.trickyLead')}
             </p>
           )}
         </div>
@@ -141,6 +140,7 @@ function GameBoard({
   onSolved: (mistakes: number) => void;
   onMistake: () => void;
 }) {
+  const { t } = useI18n();
   const target = word.word;
   const [tiles, setTiles] = useState<Tile[]>(() => scrambledLetters(target).map((ch, i) => ({ key: `${ch}-${i}`, ch })));
   const [slots, setSlots] = useState<Slot[]>(() => target.split('').map(() => ({ tile: null })));
@@ -203,8 +203,9 @@ function GameBoard({
     <div>
       <div className="paper-card washi spelling-clue">
         {image && <img className="spelling-clue-img" src={image} alt="" />}
-        <span className="card-label">MEANING</span>
-        <p className="spelling-def">{word.sections[0]?.text || '—'}</p>
+        <span className="card-label">{t('sp.meaning')}</span>
+        {/* English dictionary text — pinned LTR so punctuation/word order survive RTL UI */}
+        <p className="spelling-def" dir="ltr">{word.sections[0]?.text || '—'}</p>
         {word.partOfSpeech && (
           <span className="faint" style={{ fontStyle: 'italic' }}>
             {word.partOfSpeech}
@@ -219,8 +220,10 @@ function GameBoard({
         )}
       </div>
 
-      {/* answer row — tap a placed tile to send it back to the pool */}
-      <div className={`spelling-answer ${shaking ? 'shake' : ''}`}>
+      {/* answer row — tap a placed tile to send it back to the pool.
+          dir="ltr": the word being spelled is English, so slots must read
+          left-to-right even when the surrounding UI is RTL (Farsi). */}
+      <div className={`spelling-answer ${shaking ? 'shake' : ''}`} dir="ltr">
         {slots.map((s, i) => {
           const st = checked && feedback ? feedback[i] : null;
           return (
@@ -230,7 +233,7 @@ function GameBoard({
               className={['spelling-slot', s.tile ? 'filled' : 'empty', st ? `fb-${st.state}` : '', solved ? 'fb-solved' : ''].join(' ')}
               disabled={!s.tile || solved}
               onClick={() => returnTile(i)}
-              aria-label={s.tile ? `Remove letter ${s.tile.ch}` : `Empty position ${i + 1}`}
+              aria-label={s.tile ? t('sp.slotRemove', { ch: s.tile.ch }) : t('sp.slotEmpty', { n: i + 1 })}
             >
               {s.tile?.ch ?? ''}
             </button>
@@ -240,37 +243,39 @@ function GameBoard({
 
       {checked && !solved && (
         <p className="spelling-legend" role="status">
-          <span className="legend legend-correct">● right spot</span>
-          <span className="legend legend-misplaced">● right letter, wrong spot</span>
-          <span className="legend legend-wrong">● doesn't belong</span>
+          <span className="legend legend-correct">{t('sp.legendOk')}</span>
+          <span className="legend legend-misplaced">{t('sp.legendMis')}</span>
+          <span className="legend legend-wrong">{t('sp.legendNo')}</span>
         </p>
       )}
 
-      {/* scrambled pool */}
-      <div className="spelling-pool">
-        {tiles.map((t) => (
-          <button key={t.key} type="button" className="spelling-tile" onClick={() => placeTile(t.key)} aria-label={`Place letter ${t.ch}`}>
-            {t.ch}
+      {/* scrambled pool — kept LTR like the answer row */}
+      <div className="spelling-pool" dir="ltr">
+        {tiles.map((tile) => (
+          <button key={tile.key} type="button" className="spelling-tile" onClick={() => placeTile(tile.key)} aria-label={t('sp.tilePlace', { ch: tile.ch })}>
+            {tile.ch}
           </button>
         ))}
-        {tiles.length === 0 && !solved && <span className="spelling-pool-note">pool empty — check your answer!</span>}
+        {tiles.length === 0 && !solved && <span className="spelling-pool-note">{t('sp.poolEmpty')}</span>}
       </div>
 
       <div className="spelling-actions">
         {solved ? (
           <>
-            <span className="hand spelling-solved-note">✓ spelled it! {attempts === 1 ? '— first try!' : `— after ${attempts - 1} miss${attempts - 1 === 1 ? '' : 'es'}`}</span>
+            <span className="hand spelling-solved-note">
+              {t('sp.spelled')} {attempts === 1 ? t('sp.firstTry') : t('sp.afterMisses', { n: attempts - 1 })}
+            </span>
             <button className="btn btn-primary" onClick={() => onSolved(mistakes)}>
-              Next word →
+              {t('sp.nextWord')}
             </button>
           </>
         ) : (
           <>
             <button className="btn" onClick={clearBoard}>
-              ↺ Clear
+              {t('sp.clear')}
             </button>
             <button className="btn btn-primary" disabled={!canCheck} onClick={onCheck}>
-              ✓ Check
+              {t('sp.check')}
             </button>
           </>
         )}
@@ -289,25 +294,25 @@ interface SummaryRow {
 }
 
 function Summary({ rows, onRestart }: { rows: SummaryRow[]; onRestart: () => void }) {
+  const { t } = useI18n();
   const perfect = rows.filter((r) => r.mistakes === 0).length;
   const retried = rows.length - perfect;
   const hardest = [...rows].filter((r) => r.difficulty > 0).sort((a, b) => b.difficulty - a.difficulty).slice(0, 5);
 
   return (
     <div className="paper-card washi" style={{ textAlign: 'center', padding: 'var(--sp-6) var(--sp-5)' }}>
-      <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-2)' }}>Session done! 🧩</h2>
+      <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-2)' }}>{t('sp.done')}</h2>
       <p className="muted" style={{ marginBottom: 'var(--sp-4)' }}>
-        {rows.length} word{rows.length === 1 ? '' : 's'} attempted · <strong>{perfect}</strong> first-try ·{' '}
-        <strong>{retried}</strong> needed retries
+        {t('sp.summary', { n: rows.length, perfect, retried })}
       </p>
       {hardest.length > 0 && (
         <div style={{ textAlign: 'left', maxWidth: 380, margin: '0 auto var(--sp-4)' }}>
-          <p style={{ fontWeight: 700, marginBottom: 'var(--sp-2)' }}>🔥 Watch these ones:</p>
+          <p style={{ fontWeight: 700, marginBottom: 'var(--sp-2)' }}>{t('sp.watchThese')}</p>
           <ul className="spelling-summary-list">
             {hardest.map((r) => (
               <li key={r.word}>
                 <strong>{r.word}</strong>
-                <span className="muted"> — {r.mistakes} miss{r.mistakes === 1 ? '' : 'es'} this session</span>
+                <span className="muted"> — {t('sp.misses', { n: r.mistakes })}</span>
               </li>
             ))}
           </ul>
@@ -315,10 +320,10 @@ function Summary({ rows, onRestart }: { rows: SummaryRow[]; onRestart: () => voi
       )}
       <div className="btn-row" style={{ justifyContent: 'center' }}>
         <button className="btn btn-primary" onClick={onRestart}>
-          🔁 Another round
+          {t('rv.anotherRound')}
         </button>
         <Link to="/" className="btn">
-          ← Today
+          {t('rv.today')}
         </Link>
       </div>
     </div>
@@ -344,6 +349,7 @@ function AutoFocusStart({ words, focusIds, onStart, onDone }: { words: Word[]; f
 
 export function Spelling() {
   const { profile } = useProfiles();
+  const { t } = useI18n();
   const words = useLiveQuery(
     () => (profile?.id != null ? listWords(profile.id) : Promise.resolve([] as Word[])),
     [profile?.id],
@@ -434,7 +440,7 @@ export function Spelling() {
 
   return (
     <div className="spelling-wrap">
-      <h1>Spelling Puzzle</h1>
+      <h1>{t('sp.title')}</h1>
 
       {summary ? (
         <Summary
@@ -454,13 +460,13 @@ export function Spelling() {
           )
         ) : (
           <p className="hand" style={{ fontSize: '1.6rem', color: 'var(--ink-soft)', marginTop: 'var(--sp-5)' }}>
-            Opening your notebook…
+            {t('sp.opening')}
           </p>
         )
       ) : current ? (
         <>
           <p className="review-counter" style={{ marginTop: 'var(--sp-4)' }}>
-            Word {cursor + 1} · {queue.length - cursor} to go
+            {t('sp.wordN', { n: cursor + 1, m: queue.length - cursor })}
           </p>
           <GameBoard
             key={`${current.id}-${cursor}`}

@@ -78,7 +78,7 @@ export function Settings() {
       quiz: { answerMode, easyUnderMs: easyMs, goodUnderMs: goodMs },
     });
     await refresh();
-    toast('Schedule saved ✅');
+    toast(t('st.scheduleSaved'));
   };
 
   const saveIdentity = async () => {
@@ -86,7 +86,7 @@ export function Settings() {
     await updateProfile(pid, { name: name.trim(), accentColor: accent });
     if (avatarDirty) await updateProfileAvatar(pid, avatar);
     await refresh();
-    toast('Profile updated ✏️');
+    toast(t('st.profileSaved'));
   };
 
   const onPinComplete = async (pin: string) => {
@@ -94,7 +94,7 @@ export function Settings() {
       if (pinStep === 'old') {
         const ok = await verifyPin(pin, profile.pinHash!, profile.pinSalt!);
         if (!ok) {
-          toast('That is not the current PIN.');
+          toast(t('st.pinWrongCurrent'));
           return;
         }
         setPinStep('new');
@@ -103,18 +103,18 @@ export function Settings() {
         setPinStep('new2');
       } else if (pinStep === 'new2') {
         if (pin !== pendingPin.current) {
-          toast('The two PINs did not match — starting again.');
+          toast(t('st.pinsNoMatch'));
           setPinStep('new');
           return;
         }
         const { pinHash, pinSalt } = await hashPin(pin);
         await updateProfile(pid, { pinHash, pinSalt });
         await refresh();
-        toast('PIN set 🔒');
+        toast(t('st.pinSetToast'));
         setPinStep('idle');
       }
     } catch {
-      toast('Something went wrong — try again.');
+      toast(t('st.pinError'));
     }
   };
 
@@ -122,16 +122,16 @@ export function Settings() {
     setPinStep('idle');
     await updateProfile(pid, { pinHash: undefined, pinSalt: undefined });
     await refresh();
-    toast('PIN removed.');
+    toast(t('st.pinRemoved'));
   };
 
   const doPdf = async () => {
     setBusy(true);
     try {
       await exportPdf(profile);
-      toast('PDF notebook saved 📄');
+      toast(t('st.pdfSaved'));
     } catch {
-      toast('Could not build the PDF.');
+      toast(t('st.pdfFail'));
     } finally {
       setBusy(false);
     }
@@ -141,7 +141,7 @@ export function Settings() {
     setBusy(true);
     try {
       await downloadJsonBackup(profile);
-      toast('Backup downloaded 💾');
+      toast(t('st.backupDownloaded'));
     } finally {
       setBusy(false);
     }
@@ -158,7 +158,7 @@ export function Settings() {
       if (envelope?.app !== 'vocabulary-notebook') throw new Error('bad');
       setImporting(envelope);
     } catch {
-      toast('That file is not a Vocabulary Notebook backup.');
+      toast(t('gate.badFile'));
     }
   };
 
@@ -168,10 +168,10 @@ export function Settings() {
     try {
       await importBackup(importing, { mode });
       await refresh();
-      toast(`Restored ${importing.words.length} words into a new profile.`);
+      toast(t('st.restored', { n: importing.words.length }));
       setImporting(null);
     } catch {
-      toast('Import failed — is the file complete?');
+      toast(t('st.importFail'));
     } finally {
       setBusy(false);
     }
@@ -182,7 +182,7 @@ export function Settings() {
     try {
       const n = await loadSamplePack(pid);
       await refresh();
-      toast(`${n} sample words added — explore and delete them anytime.`);
+      toast(t('st.samplesAdded', { n }));
     } finally {
       setBusy(false);
     }
@@ -195,18 +195,17 @@ export function Settings() {
 
   return (
     <div className="settings-stack">
-      <h1>Settings</h1>
+      <h1>{t('st.title')}</h1>
 
       {/* ---------- Schedule ---------- */}
       <section className="settings-group paper-card">
-        <h2>⏳ Review schedule</h2>
+        <h2>{t('st.schedule')}</h2>
         <p className="muted" style={{ marginBottom: 'var(--sp-3)' }}>
-          How many days after finishing a section the next one unlocks. Section 1 is always immediate; the
-          final note section is optional and available any time.
+          {t('st.scheduleDesc')}
         </p>
         <div className="intervals-grid">
           <div className="interval-item">
-            <label htmlFor="iv-s2">Section 1 → 2 (days)</label>
+            <label htmlFor="iv-s2">{t('st.s1to2')}</label>
             <input
               id="iv-s2"
               className="input"
@@ -218,7 +217,7 @@ export function Settings() {
             />
           </div>
           <div className="interval-item">
-            <label htmlFor="iv-s3">Section 2 → 3 (days)</label>
+            <label htmlFor="iv-s3">{t('st.s2to3')}</label>
             <input
               id="iv-s3"
               className="input"
@@ -230,28 +229,28 @@ export function Settings() {
             />
           </div>
           <div className="interval-item">
-            <label htmlFor="iv-s4">Section 3 → 4</label>
-            <input id="iv-s4" className="input" value="optional" disabled title="Section 4 is optional" />
+            <label htmlFor="iv-s4">{t('st.s3to4')}</label>
+            <input id="iv-s4" className="input" value={t('st.optional')} disabled title={t('st.optionalTitle')} />
           </div>
         </div>
         <div className="interval-item" style={{ marginTop: 'var(--sp-3)' }}>
-          <label htmlFor="iv-goal">Daily goal: {dailyGoal} section{dailyGoal === 1 ? '' : 's'} per day</label>
+          <label htmlFor="iv-goal">{t('st.dailyGoal', { n: dailyGoal })}</label>
           <div className="range-row">
             <input id="iv-goal" type="range" min={1} max={10} value={dailyGoal} onChange={(e) => setDailyGoal(Number(e.target.value))} />
             <span className="range-val">{dailyGoal}</span>
           </div>
         </div>
         <div className="interval-item" style={{ marginTop: 'var(--sp-3)' }}>
-          <label htmlFor="iv-deck">Flashcards per review session: {deckSize}</label>
+          <label htmlFor="iv-deck">{t('st.deckSize', { n: deckSize })}</label>
           <div className="range-row">
             <input id="iv-deck" type="range" min={5} max={30} value={deckSize} onChange={(e) => setDeckSize(Number(e.target.value))} />
             <span className="range-val">{deckSize}</span>
           </div>
         </div>
         <div style={{ marginTop: 'var(--sp-4)' }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink-soft)' }}>Quiz answer mode</label>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink-soft)' }}>{t('st.answerMode')}</label>
           <p className="faint" style={{ fontSize: '0.78rem', marginBottom: 'var(--sp-2)' }}>
-            What the multiple-choice options show during review quizzes. One mode per session.
+            {t('st.answerModeDesc')}
           </p>
           <div className="chip-row">
             <button
@@ -259,24 +258,24 @@ export function Settings() {
               className={`chip ${answerMode === 'definition' ? 'chip-on' : ''}`}
               onClick={() => setAnswerMode('definition')}
             >
-              🇬🇧 English definitions
+              {t('st.modeDef')}
             </button>
             <button
               type="button"
               className={`chip ${answerMode === 'persian' ? 'chip-on' : ''}`}
               onClick={() => setAnswerMode('persian')}
             >
-              🇮🇷 Persian meanings
+              {t('st.modeFa')}
             </button>
           </div>
         </div>
         <details style={{ marginTop: 'var(--sp-3)' }}>
           <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--ink-soft)' }}>
-            Advanced: quiz timing thresholds
+            {t('st.advanced')}
           </summary>
           <div className="intervals-grid" style={{ marginTop: 'var(--sp-2)' }}>
             <div className="interval-item">
-              <label htmlFor="quiz-easy">Fast answer (Easy) under</label>
+              <label htmlFor="quiz-easy">{t('st.easyUnder')}</label>
               <div className="range-row">
                 <input
                   id="quiz-easy"
@@ -287,11 +286,11 @@ export function Settings() {
                   value={easyUnderSec}
                   onChange={(e) => setEasyUnderSec(Math.max(1, Number(e.target.value)))}
                 />
-                <span className="range-val">sec</span>
+                <span className="range-val">{t('st.sec')}</span>
               </div>
             </div>
             <div className="interval-item">
-              <label htmlFor="quiz-good">Normal answer (Good) under</label>
+              <label htmlFor="quiz-good">{t('st.goodUnder')}</label>
               <div className="range-row">
                 <input
                   id="quiz-good"
@@ -302,28 +301,27 @@ export function Settings() {
                   value={goodUnderSec}
                   onChange={(e) => setGoodUnderSec(Math.max(2, Number(e.target.value)))}
                 />
-                <span className="range-val">sec</span>
+                <span className="range-val">{t('st.sec')}</span>
               </div>
             </div>
           </div>
           <p className="faint" style={{ fontSize: '0.78rem' }}>
-            Correct answers slower than the normal threshold grade as Hard (hesitated or guessed). Wrong answers
-            always grade as Again. Applies to new review sessions.
+            {t('st.timingDesc')}
           </p>
         </details>
         <div className="btn-row" style={{ marginTop: 'var(--sp-4)' }}>
           <button className="btn btn-primary" onClick={() => void saveSchedule()}>
-            Save schedule
+            {t('st.saveSchedule')}
           </button>
         </div>
         <p className="faint" style={{ fontSize: '0.78rem', marginTop: 'var(--sp-2)' }}>
-          Changes apply to new sections — words already in motion keep their original unlock dates.
+          {t('st.scheduleNote')}
         </p>
       </section>
 
       {/* ---------- Profile ---------- */}
       <section className="settings-group paper-card">
-        <h2>👤 My profile</h2>
+        <h2>{t('st.profile')}</h2>
         <div className="profile-edit-row">
           <AvatarPicker
             blob={avatarDirty ? avatar?.blob : profile.avatarBlob}
@@ -337,11 +335,11 @@ export function Settings() {
           />
           <div className="profile-edit-fields">
             <div className="field" style={{ marginBottom: 'var(--sp-3)' }}>
-              <label htmlFor="set-name">Display name</label>
+              <label htmlFor="set-name">{t('st.displayName')}</label>
               <input id="set-name" className="input" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="field">
-              <label>Notebook colour</label>
+              <label>{t('st.colour')}</label>
               <div className="chip-row">
                 {ACCENTS.map((c) => (
                   <button
@@ -364,27 +362,27 @@ export function Settings() {
           </div>
         </div>
         <button className="btn" onClick={() => void saveIdentity()}>
-          Save profile
+          {t('st.saveProfile')}
         </button>
 
         <div style={{ marginTop: 'var(--sp-4)' }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink-soft)' }}>Secret PIN</label>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink-soft)' }}>{t('st.pin')}</label>
           <p className="faint" style={{ fontSize: '0.8rem', marginBottom: 'var(--sp-2)' }}>
-            {profile.pinHash ? 'A PIN is set for this notebook.' : 'No PIN set — a gentle lock against nosy siblings.'}
+            {profile.pinHash ? t('st.pinSet') : t('st.pinNone')}
           </p>
           <div className="btn-row">
             {profile.pinHash ? (
               <>
                 <button className="btn btn-sm" onClick={() => setPinStep('old')}>
-                  Change PIN
+                  {t('st.changePin')}
                 </button>
                 <button className="btn btn-sm btn-ghost" onClick={() => void removePin()}>
-                  Remove PIN
+                  {t('st.removePin')}
                 </button>
               </>
             ) : (
               <button className="btn btn-sm" onClick={() => setPinStep('new')}>
-                Set a PIN
+                {t('st.setPin')}
               </button>
             )}
           </div>
@@ -393,16 +391,16 @@ export function Settings() {
 
       {/* ---------- Data & backup ---------- */}
       <section className="settings-group paper-card">
-        <h2>💾 Backup &amp; export</h2>
+        <h2>{t('st.backup')}</h2>
         <div className="btn-row">
           <button className="btn btn-primary" disabled={busy} onClick={() => void doPdf()}>
-            📄 Notebook as PDF
+            {t('st.pdf')}
           </button>
           <button className="btn" disabled={busy} onClick={() => void doJson()}>
-            💾 Full JSON backup
+            {t('st.json')}
           </button>
           <button className="btn" disabled={busy} onClick={() => void doSummary()}>
-            📈 Progress summary
+            {t('st.summaryBtn')}
           </button>
         </div>
 
@@ -414,10 +412,10 @@ export function Settings() {
                 className="btn btn-sm"
                 onClick={async () => {
                   const how = await shareOrCopySummary(summary);
-                  toast(how === 'shared' ? 'Shared! 📤' : how === 'copied' ? 'Copied — paste it to your tutor 📋' : 'Saved as .txt');
+                  toast(how === 'shared' ? t('st.shared') : how === 'copied' ? t('st.copied') : t('st.savedTxt'));
                 }}
               >
-                📤 Share / copy
+                {t('st.shareCopy')}
               </button>
             </div>
           </div>
@@ -425,7 +423,7 @@ export function Settings() {
 
         <div style={{ marginTop: 'var(--sp-4)' }}>
           <button className="btn btn-ghost" disabled={busy} onClick={() => importRef.current?.click()}>
-            📁 Restore a backup file
+            {t('st.restoreBtn')}
           </button>
           <input
             ref={importRef}
@@ -517,25 +515,24 @@ export function Settings() {
 
       {/* ---------- Sample data ---------- */}
       <section className="settings-group paper-card">
-        <h2>🧪 Try it out</h2>
+        <h2>{t('st.samples')}</h2>
         <p className="muted" style={{ marginBottom: 'var(--sp-3)' }}>
-          Adds 8 sample words (A1 → IELTS) in different stages so you can see how the notebook, dashboard and
-          flashcards feel. Real words are untouched; samples can be deleted like any other word.
+          {t('st.samplesDesc')}
         </p>
         <button className="btn" disabled={busy} onClick={() => void loadSamples()}>
-          ✨ Load sample pack
+          {t('st.loadSamples')}
         </button>
       </section>
 
       {/* ---------- Danger zone ---------- */}
       <section className="settings-group paper-card" style={{ borderColor: 'var(--red)' }}>
-        <h2>⚠️ Danger zone</h2>
+        <h2>{t('st.danger')}</h2>
         <div className="btn-row">
           <button className="btn" onClick={() => void signOut()}>
-            🔁 Switch profile
+            {t('st.switchProfile')}
           </button>
           <button className="btn btn-danger" onClick={() => setConfirmDeleteProfile(true)}>
-            🗑 Delete this profile
+            {t('st.deleteProfile')}
           </button>
         </div>
       </section>
@@ -554,7 +551,7 @@ export function Settings() {
               if (tutorPinPad === 'new') {
                 await setTutorPin(pin);
                 setTutorPinSet(true);
-                toast('🔒');
+                toast('🔒'); // universal glyph — no words to translate
               } else {
                 const p = await getTutorPin();
                 const ok = p.hash && p.salt ? await verifyPin(pin, p.hash, p.salt) : false;
@@ -574,8 +571,8 @@ export function Settings() {
       {pinStep !== 'idle' && (
         <PinPad
           key={pinStep}
-          title={pinStep === 'old' ? 'Current PIN' : pinStep === 'new' ? 'New PIN' : 'Repeat new PIN'}
-          subtitle={pinStep === 'new' ? '4 digits — something memorable' : undefined}
+          title={pinStep === 'old' ? t('st.pinCurrent') : pinStep === 'new' ? t('st.pinNew') : t('st.pinRepeat')}
+          subtitle={pinStep === 'new' ? t('st.pinSub') : undefined}
           onClose={() => setPinStep('idle')}
           onComplete={(pin) => void onPinComplete(pin)}
         />
@@ -583,52 +580,48 @@ export function Settings() {
 
       {importing && (
         <Modal
-          title={`Restore backup of ${importing.profile.name}?`}
+          title={t('st.restoreTitle', { name: importing.profile.name })}
           onClose={() => setImporting(null)}
           footer={
             <>
               <button className="btn" onClick={() => setImporting(null)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className="btn btn-primary" disabled={busy} onClick={() => void runImport('replace')}>
-                Restore as saved
+                {t('st.restoreAsSaved')}
               </button>
               <button className="btn" disabled={busy} onClick={() => void runImport('merge')}>
-                Restore (latest wins)
+                {t('st.restoreLatest')}
               </button>
             </>
           }
         >
           <p>
-            The backup contains <strong>{importing.words.length} words</strong> exported{' '}
-            {new Date(importing.exportedAt).toLocaleString()}.
+            {t('st.restoreBody', {
+              n: importing.words.length,
+              date: new Date(importing.exportedAt).toLocaleString(),
+            })}
           </p>
-          <p className="muted">
-            Restoring always creates a <strong>new profile</strong>, so nothing currently on this device is
-            overwritten or lost.
-          </p>
+          <p className="muted">{t('st.restoreNewProfile')}</p>
         </Modal>
       )}
 
       {confirmDeleteProfile && (
         <Modal
-          title="Delete this profile?"
+          title={t('st.deleteProfileTitle')}
           onClose={() => setConfirmDeleteProfile(false)}
           footer={
             <>
               <button className="btn" onClick={() => setConfirmDeleteProfile(false)}>
-                Keep it
+                {t('st.keepIt')}
               </button>
               <button className="btn btn-danger" onClick={() => void reallyDeleteProfile()}>
-                Delete everything
+                {t('st.deleteEverything')}
               </button>
             </>
           }
         >
-          <p>
-            This permanently deletes <strong>{profile.name}</strong>'s profile and every word in this notebook
-            from this device. Export a JSON backup first if you might want it back!
-          </p>
+          <p>{t('st.deleteProfileBody', { name: profile.name })}</p>
         </Modal>
       )}
 

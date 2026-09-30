@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createRootPortal } from './portal';
+import { useI18n } from '../../i18n';
 
 export function PinPad({
   title,
@@ -16,6 +17,7 @@ export function PinPad({
   error?: string;
   onClose?: () => void;
 }) {
+  const { t } = useI18n();
   const [digits, setDigits] = useState('');
   const [showClose] = useState(() => !!onClose);
 
@@ -46,7 +48,7 @@ export function PinPad({
         <div className="modal-head">
           <h2>{title}</h2>
           {showClose && (
-            <button className="icon-btn" onClick={onClose} aria-label="Cancel">
+            <button className="icon-btn" onClick={onClose} aria-label={t('common.cancel')}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
@@ -55,12 +57,14 @@ export function PinPad({
         </div>
         <div className="modal-body" style={{ alignItems: 'center' }}>
           {subtitle && <p className="muted">{subtitle}</p>}
-          <div className="pin-dots" aria-label={`PIN entry, ${digits.length} of ${length} digits`}>
+          <div className="pin-dots" aria-label={t('pin.entryAria', { n: digits.length, total: length })}>
             {Array.from({ length }, (_, i) => (
               <span key={i} className={`pin-dot ${i < digits.length ? 'filled' : ''}`} />
             ))}
           </div>
-          <div className="pin-pad" onClick={onKey}>
+          {/* Digits read 1→9 left-to-right in every language — pin LTR so the
+              RTL (Farsi) UI doesn't mirror the keypad. */}
+          <div className="pin-pad" onClick={onKey} dir="ltr">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => (
               <button key={k} type="button" className="pin-key" data-key={k}>
                 {k}
@@ -70,7 +74,7 @@ export function PinPad({
             <button type="button" className="pin-key" data-key="0">
               0
             </button>
-            <button type="button" className="pin-key" data-key="back" aria-label="Delete digit">
+            <button type="button" className="pin-key" data-key="back" aria-label={t('pin.deleteDigit')}>
               ⌫
             </button>
           </div>

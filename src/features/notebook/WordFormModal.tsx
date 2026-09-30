@@ -4,6 +4,7 @@ import { LevelChips } from '../../components/ui/Chips';
 import { downscaleImage } from '../../utils/image';
 import { useObjectUrl } from '../../hooks/useMisc';
 import { PARTS_OF_SPEECH, type LevelTag, type Word } from '../../db/models';
+import { useI18n } from '../../i18n';
 import type { NewWordInput } from '../../db/repo';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
+  const { t } = useI18n();
   const [word, setWord] = useState(existing?.word ?? '');
   const [phonetic, setPhonetic] = useState(existing?.phonetic ?? '');
   const [pos, setPos] = useState(existing?.partOfSpeech ?? '');
@@ -66,26 +68,26 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
 
   return (
     <Modal
-      title={title ?? (existing ? 'Edit word' : 'Add a word')}
+      title={title ?? (existing ? t('form.editTitle') : t('form.addTitle'))}
       onClose={onClose}
       footer={
         <>
           <button className="btn" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className="btn btn-primary" disabled={!canSave} onClick={() => void submit()}>
-            {existing ? 'Save changes' : 'Add to notebook'} ✏️
+            {existing ? t('form.saveChanges') : `${t('form.addToNotebook')} ✏️`}
           </button>
         </>
       }
     >
       <div className="field">
-        <label htmlFor="wf-word">Word *</label>
+        <label htmlFor="wf-word">{t('form.word')}</label>
         <input
           id="wf-word"
           className="input"
           style={{ fontFamily: 'var(--font-hand)', fontSize: '1.4rem' }}
-          placeholder="e.g. generous"
+          placeholder={t('form.wordPlaceholder')}
           value={word}
           maxLength={60}
           onChange={(e) => setWord(e.target.value)}
@@ -95,7 +97,7 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
 
       <div className="edit-head">
         <div className="field">
-          <label htmlFor="wf-phon">Phonetics (optional)</label>
+          <label htmlFor="wf-phon">{t('form.phonetic')}</label>
           <input
             id="wf-phon"
             className="input"
@@ -106,12 +108,12 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
           />
         </div>
         <div className="field">
-          <label htmlFor="wf-pos">Part of speech</label>
+          <label htmlFor="wf-pos">{t('form.pos')}</label>
           <select id="wf-pos" className="select" value={pos} onChange={(e) => setPos(e.target.value)}>
-            <option value="">— choose —</option>
+            <option value="">{t('form.posChoose')}</option>
             {PARTS_OF_SPEECH.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {t(`pos.${p}`)}
               </option>
             ))}
           </select>
@@ -119,7 +121,7 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
       </div>
 
       <div className="field">
-        <label htmlFor="wf-persian">Persian meaning (optional)</label>
+        <label htmlFor="wf-persian">{t('form.persian')}</label>
         <input
           id="wf-persian"
           className="input"
@@ -133,16 +135,16 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
       </div>
 
       <div className="field">
-        <label>Level tags (choose any)</label>
+        <label>{t('form.levels')}</label>
         <LevelChips selected={tags} onToggle={(t) => setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))} />
       </div>
 
       <div className="field">
-        <label htmlFor="wf-course">Course / term (optional)</label>
+        <label htmlFor="wf-course">{t('form.course')}</label>
         <input
           id="wf-course"
           className="input"
-          placeholder="e.g. Term 1 — Fall 2026"
+          placeholder={t('form.coursePlaceholder')}
           value={course}
           maxLength={80}
           onChange={(e) => setCourse(e.target.value)}
@@ -150,7 +152,7 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
       </div>
 
       <div className="field">
-        <label>Picture (optional — great for younger students)</label>
+        <label>{t('form.picture')}</label>
         {currentImage && !removeImage ? (
           <div className="img-wrap" style={{ position: 'relative', display: 'inline-block' }}>
             <img src={currentImage} alt="Word illustration" style={{ maxHeight: 140, borderRadius: 10, border: '2px solid var(--line)' }} />
@@ -162,12 +164,12 @@ export function WordFormModal({ onClose, onSubmit, existing, title }: Props) {
                 setBlob(undefined);
               }}
             >
-              Remove
+              {t('form.remove')}
             </button>
           </div>
         ) : (
           <button type="button" className="btn btn-ghost" onClick={() => fileRef.current?.click()}>
-            🖼️ Choose a picture
+            {t('form.choosePicture')}
           </button>
         )}
         <input

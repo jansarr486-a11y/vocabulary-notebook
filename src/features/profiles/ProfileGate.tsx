@@ -4,6 +4,7 @@ import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../components/ui/ToastProvider';
 import { AvatarPicker } from '../../components/ui/AvatarPicker';
 import { useObjectUrl } from '../../hooks/useMisc';
+import { useI18n } from '../../i18n';
 import { importBackup } from '../../db/repo';
 import type { BackupEnvelope, Profile } from '../../db/models';
 
@@ -22,6 +23,7 @@ function TileAvatar({ profile }: { profile: Profile }) {
 export function ProfileGate() {
   const { profiles, choose, createNew, refresh, activate } = useProfiles();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [accent, setAccent] = useState(ACCENTS[0]);
@@ -33,7 +35,7 @@ export function ProfileGate() {
   const submitCreate = async () => {
     if (!name.trim()) return;
     if (pin && !/^\d{4}$/.test(pin)) {
-      toast('PIN must be exactly 4 digits (or leave it empty)');
+      toast(t('gate.pinDigits'));
       return;
     }
     setBusy(true);
@@ -53,9 +55,9 @@ export function ProfileGate() {
       const newId = await importBackup(envelope, { mode: 'merge' });
       await refresh();
       await activate(newId);
-      toast(`Welcome back, ${envelope.profile.name}! Notebook restored.`);
+      toast(t('gate.restored', { name: envelope.profile.name }));
     } catch {
-      toast('That file is not a Vocabulary Notebook backup.');
+      toast(t('gate.badFile'));
     } finally {
       setBusy(false);
     }
@@ -64,8 +66,8 @@ export function ProfileGate() {
   return (
     <div className="gate-wrap">
       <div className="gate-card paper-card washi">
-        <h1>Vocabulary Notebook</h1>
-        <p className="sub">Who is writing today?</p>
+        <h1>{t('app.name')}</h1>
+        <p className="sub">{t('gate.who')}</p>
 
         <div className="profile-list">
           {profiles.map((p) => (
@@ -75,8 +77,8 @@ export function ProfileGate() {
                 <span className="name">{p.name}</span>
                 <br />
                 <span className="meta">
-                  {p.pinHash ? '🔒 PIN protected · ' : ''}
-                  since {new Date(p.createdAt).toLocaleDateString()}
+                  {p.pinHash ? t('gate.pinProtected') : ''}
+                  {t('gate.since', { date: new Date(p.createdAt).toLocaleDateString() })}
                 </span>
               </span>
             </button>
@@ -84,13 +86,13 @@ export function ProfileGate() {
         </div>
 
         <button className="btn btn-primary" onClick={() => setCreating(true)}>
-          ➕ New notebook
+          {t('gate.new')}
         </button>
 
-        <div className="gate-divider">or</div>
+        <div className="gate-divider">{t('gate.or')}</div>
 
         <button className="btn btn-ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
-          📁 Restore from a backup file
+          {t('gate.restore')}
         </button>
         <input
           ref={fileRef}
@@ -105,30 +107,29 @@ export function ProfileGate() {
         />
       </div>
 
-      {creating && (
-        <Modal
-          title="New notebook"
+      {creating && (        <Modal
+          title={t('gate.createTitle')}
           onClose={() => setCreating(false)}
           footer={
             <>
               <button className="btn" onClick={() => setCreating(false)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => void submitCreate()}>
-                Create
+                {t('gate.create')}
               </button>
             </>
           }
-        >
+          >
           <div className="profile-edit-row">
             <AvatarPicker accent={accent} name={name || '?'} onChange={setAvatar} size={84} />
             <div className="profile-edit-fields" style={{ flex: 1 }}>
               <div className="field">
-                <label htmlFor="gate-name">Display name</label>
+                <label htmlFor="gate-name">{t('gate.displayName')}</label>
                 <input
                   id="gate-name"
                   className="input"
-                  placeholder="e.g. Amina"
+                  placeholder={t('gate.namePlaceholder')}
                   value={name}
                   maxLength={40}
                   onChange={(e) => setName(e.target.value)}
@@ -138,13 +139,13 @@ export function ProfileGate() {
             </div>
           </div>
           <div className="field">
-            <label>Notebook colour</label>
+            <label>{t('gate.colour')}</label>
             <div className="chip-row">
               {ACCENTS.map((c) => (
                 <button
                   key={c}
                   type="button"
-                  aria-label={`Colour ${c}`}
+                  aria-label={t('gate.colourAria', { c })}
                   onClick={() => setAccent(c)}
                   style={{
                     width: 40,
@@ -159,7 +160,7 @@ export function ProfileGate() {
             </div>
           </div>
           <div className="field">
-            <label htmlFor="gate-pin">Secret PIN (optional — 4 digits)</label>
+            <label htmlFor="gate-pin">{t('gate.pin')}</label>
             <input
               id="gate-pin"
               className="input"
@@ -171,7 +172,7 @@ export function ProfileGate() {
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
             />
             <p className="faint" style={{ fontSize: '0.78rem' }}>
-              A gentle lock to keep nosy siblings out — not real security.
+              {t('gate.pinHint')}
             </p>
           </div>
         </Modal>

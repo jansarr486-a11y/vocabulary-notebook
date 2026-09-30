@@ -22,6 +22,7 @@ export function AppHeader() {
   const { t } = useI18n();
 
   const initial = (profile?.name ?? '?').trim().charAt(0).toUpperCase();
+  const appTitle = t('app.name');
   const avatarUrl = useObjectUrl(profile?.avatarBlob);
 
   return (
@@ -30,7 +31,7 @@ export function AppHeader() {
         <div className="app-header-inner">
           <NavLink to="/" className="app-logo">
             <IconLogo />
-            <span>Vocabulary Notebook</span>
+            <span>{appTitle}</span>
           </NavLink>
           <nav className="app-nav" aria-label={t('nav.main')}>
             {NAV_ITEMS.map((item) => (
@@ -47,8 +48,8 @@ export function AppHeader() {
             <button
               className="avatar-btn"
               style={{ background: profile?.accentColor }}
-              title={`${profile?.name} — switch profile`}
-              aria-label="Switch profile"
+              title={`${profile?.name} — ${t('header.switchProfile')}`}
+              aria-label={t('header.switchProfile')}
               onClick={async () => {
                 await signOut();
                 navigate('/');
@@ -68,7 +69,7 @@ export function AppHeader() {
               color: 'var(--ink-soft)',
             }}
           >
-            ✈️ Offline — everything still works
+            {t('header.offline')}
           </div>
         )}
       </header>

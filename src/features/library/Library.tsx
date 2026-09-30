@@ -7,6 +7,7 @@ import { logProgressEvent } from '../../db/progressRepo';
 import { LevelBadge } from '../../components/ui/Chips';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { useToast } from '../../components/ui/ToastProvider';
+import { useI18n } from '../../i18n';
 import {
   WORD_LIBRARY,
   bookKey,
@@ -45,10 +46,11 @@ function countsFor(words: LibraryWord[], added: Set<string>): CardCounts {
 
 /** Level badge(s) for a collection card; collapses to one tag when shared. */
 function CollectionLevelBadges({ collection }: { collection: LibraryCollection }) {
+  const { t } = useI18n();
   if (isMixedLevels(collection)) {
     return (
       <span className="chip lib-chip-mixed" title={collectionLevels(collection).join(', ')}>
-        Mixed levels
+        {t('lib.mixedLevels')}
       </span>
     );
   }
@@ -57,8 +59,9 @@ function CollectionLevelBadges({ collection }: { collection: LibraryCollection }
 }
 
 function Breadcrumb({ trail }: { trail: { label: string; to?: string }[] }) {
+  const { t } = useI18n();
   return (
-    <nav className="lib-breadcrumb" aria-label="Breadcrumb">
+    <nav className="lib-breadcrumb" aria-label={t('lib.breadcrumb')}>
       {trail.map((t, i) => (
         <span key={i} className="lib-crumb-item">
           {i > 0 && <span className="lib-crumb-sep" aria-hidden>›</span>}
@@ -97,15 +100,16 @@ function AlphaStrip({
   available: Set<string>;
   onPick: (letter: string | null) => void;
 }) {
+  const { t } = useI18n();
   return (
-    <nav className="alpha-strip" aria-label="Filter words by first letter">
+    <nav className="alpha-strip" aria-label={t('lib.alphaAria')}>
       <button
         type="button"
         className={`alpha-letter ${active === null ? 'active' : ''}`}
         aria-pressed={active === null}
         onClick={() => onPick(null)}
       >
-        All
+        {t('lib.all')}
       </button>
       {ALPHABET.map((L) => {
         const has = available.has(L);
@@ -117,7 +121,7 @@ function AlphaStrip({
             className={`alpha-letter ${isActive ? 'active' : ''}`}
             disabled={!has && !isActive}
             aria-pressed={isActive}
-            aria-label={has ? `Show only words starting with ${L}` : `No words starting with ${L}`}
+            aria-label={has ? t('lib.alphaHas', { L }) : t('lib.alphaNone', { L })}
             title={has ? `${L}` : undefined}
             onClick={() => onPick(L)}
           >
@@ -140,6 +144,7 @@ function WordRow({
   selected: boolean;
   onToggle: (w: LibraryWord) => void;
 }) {
+  const { t } = useI18n();
   return (
     <li className={`lib-word-row paper-card ${alreadyAdded ? 'lib-word-added' : ''}`}>
       <div className="lib-word-main">
@@ -155,8 +160,8 @@ function WordRow({
       </div>
       <div className="lib-word-action">
         {alreadyAdded ? (
-          <span className="chip lib-chip-added" title="This word is already in your notebook.">
-            ✓ Already added
+          <span className="chip lib-chip-added" title={t('lib.alreadyAddedTitle')}>
+            {t('lib.alreadyAdded')}
           </span>
         ) : (
           <label className={`lib-check ${selected ? 'checked' : ''}`}>
@@ -165,7 +170,7 @@ function WordRow({
               checked={selected}
               onChange={() => onToggle(entry)}
             />
-            <span>{selected ? 'Selected' : 'Add'}</span>
+            <span>{selected ? t('lib.selected') : t('lib.add')}</span>
           </label>
         )}
       </div>
@@ -191,6 +196,7 @@ function WordListView({
   const [directToReview, setDirectToReview] = useState(false);
   const { profile } = useProfiles();
   const { toast } = useToast();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const added = useAddedWordSet(profile?.id);
   const [selected, setSelected] = useState<LibraryWord[]>([]);
@@ -260,11 +266,15 @@ function WordListView({
         logProgressEvent(profile.id, { type: 'word_added', meta: { source: 'library' } });
       }
     }
-    toast(
+    const key =
       n === 1
-        ? `“${selectedAvailable[0].word}” added${directToReview ? ' — ready to review! 🎯' : ' to your notebook! 🌱'}`
-        : `${n} words added${directToReview ? ' — ready to review! 🎯' : ' to your notebook! 🌱'}`,
-    );
+        ? directToReview
+          ? 'lib.addedOneReview'
+          : 'lib.addedOne'
+        : directToReview
+          ? 'lib.addedManyReview'
+          : 'lib.addedMany';
+    toast(t(key, n === 1 ? { word: selectedAvailable[0].word } : { n }));
     navigate(directToReview ? '/review' : '/notebook');
   };
 
@@ -280,33 +290,32 @@ function WordListView({
           </p>
         </div>
         <button className="btn btn-sm" onClick={onBack}>
-          ← Back
+          {t('lib.back')}
         </button>
       </div>
 
       <p className="faint" style={{ marginBottom: 'var(--sp-4)' }}>
-        {countsFor(book.words, added).added} / {book.words.length} added to your notebook — tick words and press
-        the button to copy them over.
+        {t('lib.progress', { added: countsFor(book.words, added).added, total: book.words.length })}
       </p>
 
       <div className="lib-batch-bar">
         <input
           className="input lib-search"
           type="search"
-          placeholder="🔍 Search this book…"
+          placeholder={t('lib.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search words in this book"
+          aria-label={t('lib.searchAria')}
         />
         <span className="muted" style={{ fontSize: '0.9rem' }}>
           {selectedAvailable.length > 0
-            ? `${selectedAvailable.length} word${selectedAvailable.length === 1 ? '' : 's'} selected`
-            : 'Tick words to add several at once'}
+            ? t('lib.nSelected', { n: selectedAvailable.length })
+            : t('lib.noneSelected')}
         </span>
         <div className="lib-batch-actions">
           <label
             className={`lib-check lib-check-review ${directToReview ? 'checked' : ''}`}
-            title="Skip the 3-step notebook work: words arrive ready to review (the definition step is done for you — you can still write your own sentence later)."
+            title={t('lib.reviewModeTitle')}
           >
             <input
               type="checkbox"
@@ -314,9 +323,7 @@ function WordListView({
               onChange={(e) => {
                 if (e.target.checked) {
                   const ok = window.confirm(
-                    'Add words straight to Review?\n\n' +
-                      'They will skip the 3-step notebook work and appear in your Review deck right away (the definition step is completed for you). ' +
-                      'You can still finish their notebook steps later.',
+                    `${t('lib.reviewConfirmTitle')}\n\n${t('lib.reviewConfirmBody')}`,
                   );
                   if (ok) setDirectToReview(true);
                 } else {
@@ -324,7 +331,7 @@ function WordListView({
                 }
               }}
             />
-            <span>🎯 Review mode</span>
+            <span>{t('lib.reviewMode')}</span>
           </label>
           {available.length > 0 && (
             <button
@@ -333,13 +340,13 @@ function WordListView({
               onClick={selectAll}
               title={
                 allSelected
-                  ? 'Clear the current selection'
-                  : `Select all ${visibleAvailable.length} visible words that are not in your notebook yet`
+                  ? t('lib.clearSelectionTitle')
+                  : t('lib.selectAllTitle', { n: visibleAvailable.length })
               }
             >
               {allSelected
-                ? '✕ Clear selection'
-                : `☑ Select all (${visibleAvailable.length})`}
+                ? t('lib.clearSelection')
+                : t('lib.selectAll', { n: visibleAvailable.length })}
             </button>
           )}
           <button
@@ -347,7 +354,7 @@ function WordListView({
             disabled={selectedAvailable.length === 0}
             onClick={() => void addSelected()}
           >
-            {directToReview ? '＋ Add to Review' : '＋ Add selected words'}
+            {directToReview ? t('lib.addToReview') : t('lib.addSelected')}
           </button>
         </div>
       </div>
@@ -356,11 +363,10 @@ function WordListView({
         <div className="lib-list-main">
           {letter && (
             <p className="lib-filter-note" role="status">
-              <strong>{visible.length}</strong> word{visible.length === 1 ? '' : 's'} starting with{' '}
-              <span className="lib-filter-letter">{letter}</span>
-              {q ? ' and matching your search' : ''}
+              {t('lib.filterNote', { n: visible.length, L: letter })}
+              {q ? t('lib.filterNoteSearch') : ''}
               <button type="button" className="lib-filter-clear" onClick={() => setLetter(null)}>
-                show all
+                {t('lib.showAll')}
               </button>
             </p>
           )}
@@ -377,15 +383,15 @@ function WordListView({
             {book.words.length > 0 && visible.length === 0 && (
               <div className="empty-state">
                 <span className="doodle">🔍</span>
-                <h3>No words match{q ? ` “${query}”` : ''}</h3>
-                <p>Try another spelling — or search the Persian meaning too.</p>
+                <h3>{q ? t('lib.noMatchQ', { q: query }) : t('lib.noMatch')}</h3>
+                <p>{t('lib.noMatchBody')}</p>
               </div>
             )}
             {book.words.length === 0 && (
               <div className="empty-state">
                 <span className="doodle">📖</span>
-                <h3>No words here yet</h3>
-                <p>The tutor will fill this book soon.</p>
+                <h3>{t('lib.noWords')}</h3>
+                <p>{t('lib.noWordsBody')}</p>
               </div>
             )}
           </ul>
@@ -399,6 +405,7 @@ function WordListView({
 export function Library() {
   const { collectionId, bookId } = useParams();
   const { profile } = useProfiles();
+  const { t } = useI18n();
   const added = useAddedWordSet(profile?.id);
   const navigate = useNavigate();
 
@@ -415,7 +422,7 @@ export function Library() {
         collection={ref.collection}
         level={ref.level}
         trail={[
-          { label: 'Word Library', to: '/library' },
+          { label: t('lib.root'), to: '/library' },
           { label: ref.collection.title, to: ref.collection.books.length > 1 ? `/library/${ref.collection.id}` : undefined },
           { label: ref.book.title },
         ]}
@@ -434,7 +441,7 @@ export function Library() {
       return (
         <div>
           <Breadcrumb
-            trail={[{ label: 'Word Library', to: '/library' }, { label: collection.title }]}
+            trail={[{ label: t('lib.root'), to: '/library' }, { label: collection.title }]}
           />
       <div className="notebook-head">
         <div>
@@ -454,13 +461,13 @@ export function Library() {
                     <span className="faint">{counts.total} words</span>
                   </span>
                   <span className="lib-card-counts">
-                    <strong>{counts.added} of {counts.total}</strong> added to notebook
+                    <strong>{t('lib.addedOf', { added: counts.added, total: counts.total })}</strong>
                   </span>
                   <span className="lib-card-bar" aria-hidden>
                     <i style={{ width: `${counts.total > 0 ? (counts.added / counts.total) * 100 : 0}%` }} />
                   </span>
                   <span className="lib-card-open" aria-hidden>
-                    Open book →
+                    {t('lib.openBook')}
                   </span>
                 </Link>
               );
@@ -476,8 +483,8 @@ export function Library() {
     <div>
       <div className="notebook-head">
         <div>
-          <h1>📚 Word Library</h1>
-          <p className="faint">Curated word lists chosen by your tutor — read-only, works offline.</p>
+          <h1>{t('lib.title')}</h1>
+          <p className="faint">{t('lib.subtitle')}</p>
         </div>
       </div>
 
@@ -499,18 +506,18 @@ export function Library() {
               <span className="lib-card-meta">
                 <CollectionLevelBadges collection={collection} />
                 <span className="faint">
-                  {collection.books.length > 1 ? `${collection.books.length} books · ` : ''}
-                  {counts.total} words
+                  {collection.books.length > 1 ? `${t('lib.books', { n: collection.books.length })} · ` : ''}
+                  {t('lib.words', { n: counts.total })}
                 </span>
               </span>
               <span className="lib-card-counts">
-                <strong>{counts.added} of {counts.total}</strong> added to notebook
+                <strong>{t('lib.addedOf', { added: counts.added, total: counts.total })}</strong>
               </span>
               <span className="lib-card-bar" aria-hidden>
                 <i style={{ width: `${counts.total > 0 ? (counts.added / counts.total) * 100 : 0}%` }} />
               </span>
               <span className="lib-card-open" aria-hidden>
-                {collection.books.length > 1 ? 'Browse books →' : 'Open book →'}
+                {collection.books.length > 1 ? t('lib.browseBooks') : t('lib.openBook')}
               </span>
             </Link>
           );

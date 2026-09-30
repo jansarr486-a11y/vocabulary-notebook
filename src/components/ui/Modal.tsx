@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { useI18n } from '../../i18n';
 
 interface ModalProps {
   title: string;
@@ -9,6 +10,7 @@ interface ModalProps {
 }
 
 export function Modal({ title, onClose, children, footer, wide }: ModalProps) {
+  const { t } = useI18n();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -26,7 +28,7 @@ export function Modal({ title, onClose, children, footer, wide }: ModalProps) {
       <div className="modal" role="dialog" aria-modal="true" aria-label={title} style={wide ? { maxWidth: 720 } : undefined}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
+          <button className="icon-btn" onClick={onClose} aria-label={t('common.close')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>

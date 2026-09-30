@@ -11,21 +11,9 @@ import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../components/ui/ToastProvider';
 import { useObjectUrl } from '../../hooks/useMisc';
+import { useI18n } from '../../i18n';
 import { WordFormModal } from './WordFormModal';
 import type { Word } from '../../db/models';
-
-const SECTION_TITLES = [
-  'Dictionary definition',
-  'Dictionary example',
-  'Your own sentence',
-  'Note · mnemonic · synonyms',
-];
-const SECTION_SUBS = [
-  'One short sentence: what does this word mean?',
-  'A sentence from a dictionary that shows how the word is used.',
-  'Write it yourself — no hints, that’s how memory grows! 💪',
-  'Optional: a trick to remember it, or words with similar meaning.',
-];
 
 interface SuggestState {
   loading: boolean;
@@ -46,6 +34,7 @@ function SectionEditor({
 }) {
   const { profile } = useProfiles();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [text, setText] = useState(word.sections[index - 1]?.text ?? '');
   const [suggest, setSuggest] = useState<SuggestState>({ loading: false });
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -61,7 +50,7 @@ function SectionEditor({
     } catch {
       setSuggest({
         loading: false,
-        error: 'No suggestion right now (offline or word not found). You can still write it yourself!',
+        error: t('section.suggestFail'),
       });
     }
   };
@@ -83,13 +72,13 @@ function SectionEditor({
         logProgressEvent(profile.id, { type: 'own_sentence_written', wordId: word.id });
       }
     }
-    toast(`Section ${index} complete! ${index < 4 ? 'The next one unlocks soon. 🌟' : 'Word finished! 🎉'}`);
+    toast(`${t('section.n', { n: index })} ${index < 4 ? t('section.nextSoon') : t('section.wordFinished')}`);
     onDone();
   };
 
   const saveDraft = async () => {
     await saveSectionText(word.id!, index, text);
-    toast('Draft saved — finish it later.');
+    toast(t('section.draftSaved'));
     onClose();
   };
 
@@ -97,19 +86,21 @@ function SectionEditor({
     <div className="section-editor page-turn">
       {canSuggest && (
         <button type="button" className="btn btn-sm" disabled={suggest.loading} onClick={() => void doSuggest()}>
-          {suggest.loading ? 'Looking it up…' : '✨ Suggest from dictionary'}
+          {suggest.loading ? t('section.lookingUp') : t('section.suggest')}
         </button>
       )}
       {isOwn && (
         <p className="faint" style={{ fontSize: '0.8rem', marginBottom: 'var(--sp-2)' }}>
-          ✍️ No auto-suggestions here — this one is all you.
+          {t('section.noAuto')}
         </p>
       )}
 
       {suggest.suggestion && (
         <div className="suggest-box">
           <span className="card-label" style={{ fontSize: '0.7rem', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>
-            SUGGESTION {suggest.suggestion.fromCache ? '(saved offline)' : '(from dictionary)'} — edit freely
+            {t('section.suggestion', {
+              src: suggest.suggestion.fromCache ? t('section.sugCache') : t('section.sugDict'),
+            })}
           </span>
           <p className="s-def">{suggest.suggestion.definition}</p>
           {suggest.suggestion.example && <p className="s-ex">“{suggest.suggestion.example}”</p>}
@@ -126,10 +117,10 @@ function SectionEditor({
                 textRef.current?.focus();
               }}
             >
-              Use it
+              {t('section.useIt')}
             </button>
             <button type="button" className="btn btn-sm" onClick={() => setSuggest({ loading: false })}>
-              Dismiss
+              {t('section.dismiss')}
             </button>
           </div>
         </div>
@@ -142,20 +133,20 @@ function SectionEditor({
         ref={textRef}
         className="textarea"
         autoFocus
-        placeholder={index === 4 ? 'e.g. “generous” sounds like “genie” — a genie is generous with wishes!' : 'Type here…'}
+        placeholder={index === 4 ? t('section.ph4') : t('section.typeHere')}
         value={text}
         maxLength={1200}
         onChange={(e) => setText(e.target.value)}
       />
       <div className="sec-actions">
         <button type="button" className="btn btn-primary" disabled={!text.trim()} onClick={() => void complete()}>
-          ✓ Mark as done
+          {t('section.markDone')}
         </button>
         <button type="button" className="btn" onClick={() => void saveDraft()}>
-          Save draft
+          {t('section.saveDraft')}
         </button>
         <button type="button" className="btn btn-ghost" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </div>
@@ -169,6 +160,7 @@ export function WordCard() {
   const [searchParams] = useSearchParams();
   const { profile } = useProfiles();
   const { toast } = useToast();
+  const { t, lang } = useI18n();
 
   const word = useLiveQuery(() => getWord(wordId), [wordId]);
   const [now, setNow] = useState(Date.now());
@@ -202,9 +194,9 @@ export function WordCard() {
     return (
       <div className="empty-state">
         <span className="doodle">🔍</span>
-        <h3>Word not found</h3>
+        <h3>{t('word.notFound')}</h3>
         <Link to="/notebook" className="btn" style={{ marginTop: 'var(--sp-3)' }}>
-          ← Back to the notebook
+          {t('word.backToNotebook')}
         </Link>
       </div>
     );
@@ -226,9 +218,9 @@ export function WordCard() {
       a.href = dataUrl;
       a.download = `${word.wordLower}-card.png`;
       a.click();
-      toast('Card image saved — ready to share! 📤');
+      toast(t('word.imageSaved'));
     } catch {
-      toast('Could not create the image.');
+      toast(t('word.imageFail'));
     } finally {
       setExporting(false);
     }
@@ -236,14 +228,14 @@ export function WordCard() {
 
   const removeWord = async () => {
     await deleteWord(word.id!);
-    toast(`“${word.word}” removed from the notebook.`);
+    toast(t('word.removedToast', { word: word.word }));
     navigate('/notebook');
   };
 
   return (
     <div className="word-card" ref={cardRef}>
       <Link to="/notebook" className="word-card-back">
-        ← back to notebook
+        {t('word.backToNotebook')}
       </Link>
 
       <div className="word-head paper-card washi">
@@ -259,12 +251,12 @@ export function WordCard() {
           ))}
           {word.courseTag && <span className="chip" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>{word.courseTag}</span>}
           <span className="faint" style={{ fontSize: '0.8rem' }}>
-            added {new Date(word.dateAdded).toLocaleDateString()}
+            {t('nb.addedOn', { date: new Date(word.dateAdded).toLocaleDateString() })}
           </span>
         </div>
         {thumb && (
           <div className="img-wrap">
-            <img src={thumb} alt={`Illustration for ${word.word}`} />
+            <img src={thumb} alt={t('word.illustrationAlt', { word: word.word })} />
           </div>
         )}
         {word.persianMeaning && (
@@ -274,13 +266,13 @@ export function WordCard() {
         )}
         <div className="sec-actions" style={{ marginTop: 'var(--sp-4)' }}>
           <button className="btn btn-sm" onClick={() => setEditing(true)}>
-            ✏️ Edit word
+            {t('word.edit')}
           </button>
           <button className="btn btn-sm" disabled={exporting} onClick={() => void shareImage()}>
-            📤 Share as image
+            {t('word.shareImage')}
           </button>
           <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(true)}>
-            🗑 Delete
+            {t('word.delete')}
           </button>
         </div>
       </div>
@@ -297,14 +289,16 @@ export function WordCard() {
             <div className="sec-head">
               <span className="sec-num">{isDone ? '✓' : idx}</span>
               <div style={{ flex: 1 }}>
-                <div className="sec-title">{SECTION_TITLES[idx - 1]}</div>
-                <div className="sec-sub">{SECTION_SUBS[idx - 1]}</div>
+                <div className="sec-title">{t(`section.${idx}.full`)}</div>
+                <div className="sec-sub">{t(`section.${idx}.sub`)}</div>
               </div>
               <StateBadge state={st.state} />
             </div>
 
             {isLocked ? (
-              <div className="unlock-note">🔒 {st.unlockedAt != null ? unlockLabel(st.unlockedAt, now) : 'Complete the previous section first'}.</div>
+              <div className="unlock-note">
+                🔒 {st.unlockedAt != null ? unlockLabel(st.unlockedAt, now, t) : t('section.unlockPrev')}.
+              </div>
             ) : isDone && !isOpen ? (
               <div className="sec-body">
                 <p className="sec-text">{section?.text}</p>
@@ -315,20 +309,20 @@ export function WordCard() {
                 )}
                 <div className="sec-actions">
                   <span className="faint" style={{ fontSize: '0.78rem', alignSelf: 'center' }}>
-                    done {section?.completedAt ? new Date(section.completedAt).toLocaleDateString() : ''}
+                    {section?.completedAt ? t('section.doneAgo', { date: new Date(section.completedAt).toLocaleDateString() }) : ''}
                   </span>
                   <button className="btn btn-sm" onClick={() => setOpenSection(idx)}>
-                    Improve
+                    {t('section.improve')}
                   </button>
                   <button
                     className="btn btn-sm btn-ghost"
-                    title="Re-open this section"
+                    title={t('section.reopenTitle')}
                     onClick={async () => {
                       await uncompleteSection(word.id!, idx);
                       setOpenSection(idx);
                     }}
                   >
-                    Mark as not done
+                    {t('section.markNotDone')}
                   </button>
                 </div>
               </div>
@@ -347,9 +341,13 @@ export function WordCard() {
               </div>
             ) : (
               <div className="sec-body" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-                {section?.text && <p className="sec-text muted" style={{ flex: 1 }}>draft: {section.text}</p>}
+                {section?.text && (
+                  <p className="sec-text muted" style={{ flex: 1 }}>
+                    {t('section.draft')} {section.text}
+                  </p>
+                )}
                 <button className={`btn ${st.state === 'due' || st.state === 'overdue' ? 'btn-primary' : ''}`} onClick={() => setOpenSection(idx)}>
-                  {section?.text ? 'Continue' : 'Start writing'}
+                  {section?.text ? t('section.continue') : t('section.startWriting')}
                 </button>
               </div>
             )}
@@ -360,7 +358,7 @@ export function WordCard() {
       {editing && (
         <WordFormModal
           existing={word}
-          title={`Edit “${word.word}”`}
+          title={lang === 'fa' ? `ویرایش «${word.word}»` : `Edit “${word.word}”`}
           onClose={() => setEditing(false)}
           onSubmit={async (input) => {
             await updateWordHeader(word.id!, input);
@@ -372,20 +370,20 @@ export function WordCard() {
 
       {confirmDelete && (
         <Modal
-          title={`Delete “${word.word}”?`}
+          title={t('word.deleteTitle', { word: word.word })}
           onClose={() => setConfirmDelete(false)}
           footer={
             <>
               <button className="btn" onClick={() => setConfirmDelete(false)}>
-                Keep it
+                {t('word.keepIt')}
               </button>
               <button className="btn btn-danger" onClick={() => void removeWord()}>
-                Delete forever
+                {t('word.deleteForever')}
               </button>
             </>
           }
         >
-          <p>This removes the word and all four sections from your notebook. There is no undo.</p>
+          <p>{t('word.deleteBody')}</p>
         </Modal>
       )}
     </div>

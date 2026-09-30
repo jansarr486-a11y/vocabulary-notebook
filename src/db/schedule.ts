@@ -48,8 +48,21 @@ export function isSectionUnlocked(
 }
 
 /** Human label for a locked section: "unlocks tomorrow", "in 3 days", "today". */
-export function unlockLabel(unlockedAt: number, now: number): string {
+/**
+ * Human label for when a locked section unlocks. Pass the i18n `t` to get a
+ * localized string; omitted, it falls back to English (tests, non-React use).
+ */
+export function unlockLabel(
+  unlockedAt: number,
+  now: number,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
+): string {
   const d = daysBetween(now, unlockedAt);
+  if (t) {
+    if (d <= 0) return t('section.unlockToday');
+    if (d === 1) return t('section.unlockTomorrow');
+    return t('section.unlockIn', { n: d });
+  }
   if (d <= 0) return 'unlocks today';
   if (d === 1) return 'unlocks tomorrow';
   return `unlocks in ${d} days`;

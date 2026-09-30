@@ -7,9 +7,8 @@ import { todayProgress, wordSectionStatuses } from '../../db/schedule';
 import { StateDot } from '../../components/ui/Chips';
 import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { IconStreak, IconAddWord } from '../../components/ui/icons';
+import { useI18n } from '../../i18n';
 import type { Word } from '../../db/models';
-
-const SECTION_SHORT = ['Definition', 'Example', 'Own sentence', 'Note'];
 
 interface DueItem {
   word: Word;
@@ -20,6 +19,7 @@ interface DueItem {
 
 export function Dashboard() {
   const { profile } = useProfiles();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const words = useLiveQuery(
@@ -53,7 +53,12 @@ export function Dashboard() {
   const pct = Math.min(100, Math.round((progress.done / Math.max(1, progress.goal)) * 100));
   const firstName = profile.name.split(' ')[0];
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting =
+    hour < 12
+      ? t('today.greeting.morning', { name: firstName })
+      : hour < 18
+        ? t('today.greeting.afternoon', { name: firstName })
+        : t('today.greeting.evening', { name: firstName });
 
   // group consecutive per word
   const groups: { word: Word; items: DueItem[] }[] = [];
@@ -67,17 +72,15 @@ export function Dashboard() {
     <div>
       <div className="dash-hero">
         <div>
-          <h1 className="dash-greeting">
-            {greeting}, {firstName}!
-          </h1>
+          <h1 className="dash-greeting">{greeting}</h1>
           <p className="muted">
             {dueItems.length === 0
-              ? 'Nothing is due — add a new word or review old ones. 🎈'
-              : `${dueItems.length} section${dueItems.length === 1 ? '' : 's'} waiting for you.`}
+              ? t('today.nothingDue')
+              : t('today.sectionsWaiting', { n: dueItems.length })}
           </p>
         </div>
-        <span className="streak-pill" title="Days in a row with at least one section completed">
-          <IconStreak /> {profile.stats.streakCount} day{profile.stats.streakCount === 1 ? '' : 's'} streak
+        <span className="streak-pill" title={t('today.streakTitle')}>
+          <IconStreak /> {t('today.streak', { n: profile.stats.streakCount })}
         </span>
       </div>
 
@@ -88,26 +91,26 @@ export function Dashboard() {
           aria-valuenow={progress.done}
           aria-valuemin={0}
           aria-valuemax={progress.goal}
-          aria-label="Daily goal progress"
+          aria-label={t('today.progressLabel')}
         >
           <div className="progress-fill" style={{ width: `${pct}%` }} />
         </div>
         <span className="dash-progress-label" style={{ whiteSpace: 'nowrap' }}>
-          {doneToday} of {progress.goal} sessions {pct >= 100 ? '· goal met 🌟' : ''}
+          {t('today.sessions', { done: doneToday, goal: progress.goal })} {pct >= 100 ? t('today.goalMet') : ''}
         </span>
       </div>
 
       {groups.length === 0 ? (
         <div className="empty-state">
           <span className="doodle">🌈</span>
-          <h3>All caught up!</h3>
-          <p>Write a sentence, add a word, or flip through some flashcards.</p>
+          <h3>{t('today.caughtUp')}</h3>
+          <p>{t('today.caughtUpBody')}</p>
           <div className="btn-row" style={{ justifyContent: 'center', marginTop: 'var(--sp-4)' }}>
             <Link to="/notebook" className="btn btn-primary">
-              📓 My words
+              {t('today.myWords')}
             </Link>
             <Link to="/review" className="btn">
-              🔁 Review flashcards
+              {t('today.reviewCards')}
             </Link>
           </div>
         </div>
@@ -131,14 +134,16 @@ export function Dashboard() {
                   >
                     <StateDot state={item.state} />
                     <span className="sec-name">
-                      {item.index}. {SECTION_SHORT[item.index - 1]}
+                      {/* isolate "3." so the dot stays attached to the digit in RTL */}
+                      <span dir="ltr" style={{ unicodeBidi: 'isolate' }}>{item.index}.</span>{' '}
+                      {t(`section.${item.index}`)}
                     </span>
                     <span className={`sec-note ${item.state}`}>
                       {item.state === 'overdue'
                         ? item.overdueDays > 0
-                          ? `${item.overdueDays} day${item.overdueDays === 1 ? '' : 's'} overdue`
-                          : 'overdue'
-                        : 'due today'}
+                          ? t('today.daysOverdue', { n: item.overdueDays })
+                          : t('today.overdue')
+                        : t('today.dueToday')}
                     </span>
                   </button>
                 ))}
@@ -148,7 +153,7 @@ export function Dashboard() {
         </div>
       )}
 
-      <Link to="/notebook" className="fab" aria-label="Add a word" title="Add a word">
+      <Link to="/notebook" className="fab" aria-label={t('today.addWord')} title={t('today.addWord')}>
         <IconAddWord />
       </Link>
     </div>

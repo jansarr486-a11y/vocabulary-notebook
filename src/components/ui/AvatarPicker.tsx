@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useObjectUrl } from '../../hooks/useMisc';
+import { useI18n } from '../../i18n';
 import { downscaleAvatar, rotateBlob } from '../../utils/image';
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
  * the middle half). Zoom remembers its level per picture until changed.
  */
 export function AvatarPicker({ blob, accent, name, onChange, size = 72 }: Props) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -88,14 +90,14 @@ export function AvatarPicker({ blob, accent, name, onChange, size = 72 }: Props)
         className="avatar-btn avatar-preview"
         style={{ background: url ? 'var(--paper-deep)' : accent, width: size, height: size }}
         disabled={busy}
-        title={url ? 'Change picture' : 'Add a picture'}
-        aria-label={url ? 'Change profile picture' : 'Add profile picture'}
+        title={url ? t('avatar.changeTitle') : t('avatar.addTitle')}
+        aria-label={url ? t('avatar.changeAria') : t('avatar.addAria')}
         onClick={() => fileRef.current?.click()}
       >
         {url ? <img src={url} alt="" /> : initial}
       </button>
       {url && (
-        <label className="avatar-zoom" title="Zoom the picture to fill the circle">
+        <label className="avatar-zoom" title={t('avatar.zoomTitle')}>
           <span className="faint">−</span>
           <input
             type="range"
@@ -103,7 +105,7 @@ export function AvatarPicker({ blob, accent, name, onChange, size = 72 }: Props)
             max={3}
             step={0.1}
             value={zoom}
-            aria-label="Zoom picture"
+            aria-label={t('avatar.zoomAria')}
             disabled={busy}
             onChange={(e) => void applyZoom(Number(e.target.value))}
           />
@@ -117,15 +119,15 @@ export function AvatarPicker({ blob, accent, name, onChange, size = 72 }: Props)
           disabled={busy}
           onClick={() => fileRef.current?.click()}
         >
-          {url ? 'Change' : 'Choose photo'}
+          {url ? t('avatar.change') : t('avatar.choose')}
         </button>
         {url && (
           <>
             <button
               type="button"
               className="btn btn-sm"
-              title="Turn the picture 90° counter-clockwise"
-              aria-label="Rotate picture counter-clockwise"
+              title={t('avatar.rotateCcwTitle')}
+              aria-label={t('avatar.rotateCcwAria')}
               disabled={busy}
               onClick={() => void rotate(-1)}
             >
@@ -134,8 +136,8 @@ export function AvatarPicker({ blob, accent, name, onChange, size = 72 }: Props)
             <button
               type="button"
               className="btn btn-sm"
-              title="Turn the picture 90° clockwise"
-              aria-label="Rotate picture clockwise"
+              title={t('avatar.rotateCwTitle')}
+              aria-label={t('avatar.rotateCwAria')}
               disabled={busy}
               onClick={() => void rotate(1)}
             >
@@ -151,7 +153,7 @@ export function AvatarPicker({ blob, accent, name, onChange, size = 72 }: Props)
                 onChange(undefined);
               }}
             >
-              Remove
+              {t('avatar.remove')}
             </button>
           </>
         )}

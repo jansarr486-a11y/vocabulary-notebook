@@ -1,5 +1,6 @@
 import { LEVEL_TAG_STYLES, LEVEL_TAGS, type LevelTag } from '../../db/models';
 import { IconMastered } from './icons';
+import { useI18n } from '../../i18n';
 
 export function LevelChips({
   selected,
@@ -8,8 +9,9 @@ export function LevelChips({
   selected: LevelTag[];
   onToggle: (tag: LevelTag) => void;
 }) {
+  const { t } = useI18n();
   return (
-    <div className="chip-row" role="group" aria-label="Level tags">
+    <div className="chip-row" role="group" aria-label={t('form.levelsAria')}>
       {LEVEL_TAGS.map((tag) => {
         const on = selected.includes(tag);
         const style = LEVEL_TAG_STYLES[tag];
@@ -66,38 +68,41 @@ const DOT_GLYPH: Record<string, string> = {
   locked: '',
   optional: '',
 };
-const DOT_TITLE: Record<string, string> = {
-  overdue: 'Overdue — needs attention',
-  due: 'Due today',
-  done: 'Completed',
-  locked: 'Not started yet',
-  optional: 'Optional',
+const DOT_TITLE_KEY: Record<string, string> = {
+  overdue: 'dot.overdue',
+  due: 'dot.due',
+  done: 'dot.done',
+  locked: 'dot.locked',
+  optional: 'dot.optional',
 };
 
 export function StateDot({ state }: { state: string }) {
+  const { t } = useI18n();
+  const label = DOT_TITLE_KEY[state] ? t(DOT_TITLE_KEY[state]) : state;
   return (
     <span
       className={`dot ${STATE_CLASS[state] ?? 'dot-locked'}`}
       data-glyph={DOT_GLYPH[state] ?? ''}
-      title={DOT_TITLE[state] ?? state}
-      aria-label={DOT_TITLE[state] ?? state}
+      title={label}
+      aria-label={label}
     />
   );
 }
 
-const BADGE_LABEL: Record<string, string> = {
-  overdue: 'Overdue',
-  due: 'Due today',
-  done: 'Done',
-  locked: 'Locked',
-  optional: 'Optional',
+const BADGE_LABEL_KEY: Record<string, string> = {
+  overdue: 'state.overdue',
+  due: 'state.due',
+  done: 'state.done',
+  locked: 'state.locked',
+  optional: 'state.optional',
 };
 
 export function StateBadge({ state }: { state: string }) {
+  const { t } = useI18n();
   return (
     <span className={`badge-state badge-${state}`}>
       {state === 'done' && <IconMastered className="badge-icon" />}
-      {BADGE_LABEL[state] ?? state}
+      {BADGE_LABEL_KEY[state] ? t(BADGE_LABEL_KEY[state]) : state}
     </span>
   );
 }

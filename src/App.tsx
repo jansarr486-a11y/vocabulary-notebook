@@ -16,7 +16,7 @@ import { Review } from './features/review/Review';
 import { Spelling } from './features/spelling/Spelling';
 import { Progress } from './features/progress/Progress';
 import { Settings } from './features/settings/Settings';
-import { I18nProvider } from './i18n';
+import { I18nProvider, useI18n } from './i18n';
 
 /** Registers the service worker; checks for updates hourly while open. */
 function PwaUpdater() {
@@ -38,20 +38,21 @@ function PwaUpdater() {
 /** Surfaces offline-ready / new-version states as toasts. */
 function PwaToasts() {
   const { toast } = useToast();
+  const { t } = useI18n();
   const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW();
 
   useEffect(() => {
     if (needRefresh[0]) {
-      toast('🔄 A new version is available', {
-        actionLabel: 'Refresh',
+      toast(t('app.updateReady'), {
+        actionLabel: t('app.refresh'),
         action: () => void updateServiceWorker(true),
         duration: 15000,
       });
     } else if (offlineReady[0]) {
-      toast('✅ Ready to work offline', { duration: 4000 });
+      toast(t('app.offlineReady'), { duration: 4000 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needRefresh[0], offlineReady[0]]);
+  }, [needRefresh[0], offlineReady[0], t]);
 
   return null;
 }
@@ -70,16 +71,21 @@ function OnboardingGate() {
   return <Onboarding onFinish={() => setDone(true)} />;
 }
 
+function LoadingNotebook() {
+  const { t } = useI18n();
+  return (
+    <div className="gate-wrap">
+      <p className="hand" style={{ fontSize: '2rem', color: 'var(--ink-soft)' }}>
+        {t('app.opening')}
+      </p>
+    </div>
+  );
+}
+
 function AppRoutes() {
   const { status } = useProfiles();
   if (status === 'loading') {
-    return (
-      <div className="gate-wrap">
-        <p className="hand" style={{ fontSize: '2rem', color: 'var(--ink-soft)' }}>
-          Opening the notebook…
-        </p>
-      </div>
-    );
+    return <LoadingNotebook />;
   }
   if (status !== 'ready') {
     return status === 'pin' ? <PinUnlock /> : <ProfileGate />;

@@ -12,9 +12,11 @@ import { WordFormModal } from './WordFormModal';
 import { useObjectUrl } from '../../hooks/useMisc';
 import { useToast } from '../../components/ui/ToastProvider';
 import { IconSearch, IconAddWord } from '../../components/ui/icons';
+import { useI18n } from '../../i18n';
 import type { Word } from '../../db/models';
 
 function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2: number; s3: number; s4: number | null } }) {
+  const { t } = useI18n();
   const thumb = useObjectUrl(word.imageBlob);
   const now = Date.now();
   const statuses = wordSectionStatuses(word, intervals, now);
@@ -36,7 +38,7 @@ function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2
           {word.persianMeaning}
         </span>
       )}
-      <div className="dots" role="img" aria-label={`${doneCount} of 4 sections completed`}>
+      <div className="dots" role="img" aria-label={t('dots.aria', { n: doneCount })}>
         {statuses.map((s) => (
           <StateDot key={s.index} state={s.state} />
         ))}
@@ -45,8 +47,8 @@ function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2
         <i style={{ width: `${(doneCount / 4) * 100}%` }} />
       </div>
       <span className="count">
-        {doneCount}/4 sections
-        <span className="count-date">added {new Date(word.dateAdded).toLocaleDateString()}</span>
+        {t('nb.sections', { n: doneCount })}
+        <span className="count-date">{t('nb.addedOn', { date: new Date(word.dateAdded).toLocaleDateString() })}</span>
       </span>
     </Link>
   );
@@ -55,6 +57,7 @@ function WordTile({ word, intervals }: { word: Word; intervals: { s1: number; s2
 export function Notebook() {
   const { profile } = useProfiles();
   const { toast } = useToast();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');
@@ -82,23 +85,23 @@ export function Notebook() {
     // Progress logging (fire-and-forget, never alters the add flow).
     logProgressEvent(profile.id!, { type: 'word_added', wordId: id, meta: { source: 'manual' } });
     setAdding(false);
-    toast(`“${input.word.trim()}” added to your notebook!`);
+    toast(t('nb.addedToast', { word: input.word.trim() }));
     navigate(`/word/${id}`);
   };
 
   return (
     <div>
       <div className="notebook-head">
-        <h1>My Notebook</h1>
+        <h1>{t('nb.title')}</h1>
         <div className="search-box">
           <IconSearch className="search-box-icon" />
           <input
             className="input"
             style={{ maxWidth: 260 }}
-            placeholder="Search words…"
+            placeholder={t('nb.search')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search words"
+            aria-label={t('nb.searchAria')}
           />
         </div>
       </div>
@@ -122,11 +125,11 @@ export function Notebook() {
       {filtered.length === 0 ? (
         <div className="empty-state">
           <span className="doodle">🌱</span>
-          <h3>{words && words.length > 0 ? 'Nothing matches' : 'Your notebook is empty'}</h3>
+          <h3>{words && words.length > 0 ? t('nb.noMatch') : t('nb.empty')}</h3>
           <p>
             {words && words.length > 0
-              ? 'Try a different search or filter.'
-              : 'Every big vocabulary starts with one word. Add your first!'}
+              ? t('nb.noMatchBody')
+              : t('nb.emptyBody')}
           </p>
         </div>
       ) : (
@@ -137,7 +140,7 @@ export function Notebook() {
         </div>
       )}
 
-      <button className="fab" onClick={() => setAdding(true)} aria-label="Add a word" title="Add a word">
+      <button className="fab" onClick={() => setAdding(true)} aria-label={t('today.addWord')} title={t('today.addWord')}>
         <IconAddWord />
       </button>
 

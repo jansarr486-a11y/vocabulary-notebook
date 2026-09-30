@@ -360,7 +360,9 @@ button.chip:hover {
 /* ---------- FAB ---------- */
 .fab {
   position: fixed;
-  right: max(18px, env(safe-area-inset-right));
+  /* Logical property: hugs the inline-end (right in LTR, left in RTL), so the
+     FAB never sits on top of the first/last bottom-nav tab in either language. */
+  inset-inline-end: max(18px, env(safe-area-inset-right));
   bottom: max(18px, env(safe-area-inset-bottom));
   width: 60px;
   height: 60px;
@@ -389,7 +391,7 @@ button.chip:hover {
 .fab::after {
   content: 'Add word';
   position: absolute;
-  right: calc(100% + 10px);
+  inset-inline-end: calc(100% + 10px);
   white-space: nowrap;
   background: var(--ink);
   color: var(--paper);

@@ -10,6 +10,7 @@ import { SpeakerButton } from '../../components/ui/SpeakerButton';
 import { useObjectUrl } from '../../hooks/useMisc';
 import { buildQuizOptions, gradeQuizAnswer, isQuizServable, makeRng, type BuiltQuiz, type QuizOption } from './quiz';
 import { takePracticeFocus } from '../progress/practiceHandoff';
+import { useI18n } from '../../i18n';
 
 /** True when `v` looks like a review-state object with usable fields. */
 function isReviewState(v: unknown): v is { lastReviewedAt?: number; weight: number; pressure: number } {
@@ -57,6 +58,7 @@ const EMPTY_TALLY: Tally = { again: 0, hard: 0, good: 0, easy: 0, hot: [] };
 
 export function Review() {
   const { profile } = useProfiles();
+  const { t } = useI18n();
 
   const words = useLiveQuery(
     () => (profile?.id != null ? listWords(profile.id) : Promise.resolve([] as Word[])),
@@ -221,11 +223,11 @@ export function Review() {
   const verdict = pickedOpt
     ? pickedOpt.isCorrect
       ? elapsed < cfg.easyUnderMs
-        ? 'Lightning fast! ⚡ Graded Easy'
+        ? t('rv.verdict.easy')
         : elapsed < cfg.goodUnderMs
-          ? 'Well done 👍 Graded Good'
-          : 'A bit slow — Graded Hard'
-      : 'Not quite — it comes back in a few cards 🔁'
+          ? t('rv.verdict.good')
+          : t('rv.verdict.hard')
+      : t('rv.verdict.again')
     : '';
 
   if (!profile) return null;
@@ -233,59 +235,59 @@ export function Review() {
 
   return (
     <div className="review-wrap">
-      <h1>Review quiz</h1>
+      <h1>{t('rv.title')}</h1>
       <p className="muted">
-        Pick the right meaning for each word — the quiz grades itself: wrong = again, fast = easy, slow = hard.
+        {t('rv.subtitle')}
       </p>
 
       {!hasAnyCompleted ? (
         <div className="empty-state" style={{ marginTop: 'var(--sp-5)' }}>
           <span className="doodle">🃏</span>
-          <h3>No cards yet</h3>
-          <p>Finish at least one section of a word and it will appear here.</p>
+          <h3>{t('rv.noCards')}</h3>
+          <p>{t('rv.noCardsBody')}</p>
           <Link to="/notebook" className="btn btn-primary" style={{ marginTop: 'var(--sp-3)' }}>
-            📓 Go to my notebook
+            {t('rv.goNotebook')}
           </Link>
         </div>
       ) : !deck ? (
         <p className="hand" style={{ fontSize: '1.6rem', color: 'var(--ink-soft)', marginTop: 'var(--sp-5)' }}>
-          Shuffling the deck…
+          {t('rv.shuffling')}
         </p>
       ) : finished ? (
         tally.again + tally.hard + tally.good + tally.easy === 0 ? (
           // Deck was empty (nothing servable) — never claim "Reviewed 0 cards".
           <div className="empty-state" style={{ marginTop: 'var(--sp-5)' }}>
             <span className="doodle">🃏</span>
-            <h3>Nothing to review right now</h3>
-            <p>Words appear here once at least their definition section is finished.</p>
+            <h3>{t('rv.nothingNow')}</h3>
+            <p>{t('rv.nothingNowBody')}</p>
             <Link to="/notebook" className="btn btn-primary" style={{ marginTop: 'var(--sp-3)' }}>
-              📓 Go to my notebook
+              {t('rv.goNotebook')}
             </Link>
           </div>
         ) : (
         <div className="paper-card washi" style={{ marginTop: 'var(--sp-5)', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-3)' }}>Session done! 🎉</h2>
+          <h2 style={{ fontSize: '1.6rem', marginBottom: 'var(--sp-3)' }}>{t('rv.sessionDone')}</h2>
           <p>
-            Reviewed <strong>{tally.again + tally.hard + tally.good + tally.easy}</strong> card
-            {tally.again + tally.hard + tally.good + tally.easy === 1 ? '' : 's'} — {tally.easy} easy · {tally.good} good ·{' '}
-            {tally.hard} hard · {tally.again} again
+            <strong>{t('rv.reviewed', { n: tally.again + tally.hard + tally.good + tally.easy })}</strong>
+            {' — '}
+            {t('rv.tally', { easy: tally.easy, good: tally.good, hard: tally.hard, again: tally.again })}
           </p>
           {tally.hot.length > 0 && (
             <p className="muted" style={{ marginTop: 'var(--sp-2)' }}>
-              Tricky ones to watch: <strong>{[...new Set(tally.hot)].join(', ')}</strong>
+              {t('rv.watch')} <strong>{[...new Set(tally.hot)].join(', ')}</strong>
             </p>
           )}
           {smallNotebook && (
             <p className="muted" style={{ marginTop: 'var(--sp-2)' }}>
-              📝 Some cards had fewer options — <Link to="/library">add more words</Link> for a richer quiz.
+              {t('rv.fewerOptions')} <Link to="/library">{t('rv.addMoreWords')}</Link> {t('rv.fewerOptionsTail')}
             </p>
           )}
           <div className="btn-row" style={{ justifyContent: 'center', marginTop: 'var(--sp-4)' }}>
             <button className="btn btn-primary" onClick={restart}>
-              🔁 Another round
+              {t('rv.anotherRound')}
             </button>
             <Link to="/" className="btn">
-              ← Today
+              {t('rv.today')}
             </Link>
           </div>
         </div>
@@ -293,10 +295,10 @@ export function Review() {
       ) : (
         <>
           <p className="review-counter" style={{ marginTop: 'var(--sp-4)' }}>
-            Card {cursor + 1} / {deck.length}
+            {t('rv.cardN', { n: cursor + 1, total: deck.length })}
           </p>
           <div className="quiz-card paper-card washi">
-            <span className="card-label">WHAT DOES IT MEAN?</span>
+            <span className="card-label">{t('rv.meaningLabel')}</span>
             <div className="card-word" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               {current!.word}
               <SpeakerButton text={current!.word} small />
@@ -307,7 +309,7 @@ export function Review() {
                 {current!.partOfSpeech}
               </span>
             )}
-            {thumb && <img className="quiz-word-img" src={thumb} alt={`Illustration for ${current!.word}`} />}
+            {thumb && <img className="quiz-word-img" src={thumb} alt={t('word.illustrationAlt', { word: current!.word })} />}
 
             {quiz && (
               <div className="quiz-options">
@@ -343,7 +345,7 @@ export function Review() {
                 <div className="quiz-detail">
                   {sec1?.text && (
                     <p className="card-content">
-                      <span className="faint">Definition:</span> {sec1.text}
+                      <span className="faint">{t('rv.definition')}</span> {sec1.text}
                     </p>
                   )}
                   {current!.persianMeaning && (
@@ -358,7 +360,7 @@ export function Review() {
                   )}
                   {sec3?.completedAt != null && sec3?.text && (
                     <p className="card-content" style={{ fontSize: '0.9rem' }}>
-                      <strong>Your sentence:</strong> {sec3.text}
+                      <strong>{t('rv.yourSentence')}</strong> {sec3.text}
                     </p>
                   )}
                   {sec4?.text && (
@@ -366,7 +368,7 @@ export function Review() {
                   )}
                 </div>
                 <button className="btn btn-primary" onClick={advance}>
-                  Next →
+                  {t('rv.next')}
                 </button>
               </div>
             )}

@@ -547,6 +547,11 @@
   .app-main {
     padding-bottom: 76px; /* clear the bottom bar */
   }
+  /* Lift the FAB above the bottom tab bar — at rest it sits 18px from the
+     bottom edge, which lands on the Progress tab. */
+  .fab {
+    bottom: calc(60px + max(14px, env(safe-area-inset-bottom)));
+  }
 }
 
 /* ---------- reduced motion ---------- */
