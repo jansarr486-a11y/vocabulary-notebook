@@ -33,7 +33,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
         // The bundled word library (12,000+ entries across six books) pushes
         // the main JS chunk past smaller limits — raise the precache ceiling
         // to keep the app fully offline-capable.

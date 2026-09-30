@@ -1,4 +1,24 @@
 /* ---------- Fonts (self-hosted, offline-safe) ---------- */
+/* Mitra — Persian typeface for all Farsi text. unicode-range limits it to
+   Arabic-script glyphs, so it supplies the Persian letters wherever they
+   appear (body, headings, handwriting titles) while English words and Latin
+   digits keep Nunito/Caveat. */
+@font-face {
+  font-family: 'Mitra';
+  src: url('/fonts/mitra-400.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Mitra';
+  src: url('/fonts/mitra-700.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
 @font-face {
   font-family: 'Caveat';
   src: url('/fonts/caveat-600.woff2') format('woff2');
@@ -66,8 +86,8 @@
   --radius-md: 14px;
   --radius-lg: 22px;
 
-  --font-hand: 'Caveat', 'Comic Sans MS', cursive;
-  --font-body: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-hand: 'Caveat', 'Mitra', 'Comic Sans MS', cursive;
+  --font-body: 'Nunito', 'Mitra', system-ui, -apple-system, sans-serif;
 
   --sp-1: 4px;
   --sp-2: 8px;
