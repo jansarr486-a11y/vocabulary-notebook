@@ -7,11 +7,11 @@
  */
 
 /**
- * Activation endpoint. Replace the placeholder (or set
- * VITE_LICENSE_VERIFY_URL at build time) when the tutor-side server exists.
+ * Activation endpoint. VITE_LICENSE_VERIFY_URL can override this at build
+ * time (e.g. for a local mock server during development).
  */
 const LICENSE_VERIFY_URL: string =
-  import.meta.env.VITE_LICENSE_VERIFY_URL ?? 'https://YOUR-DOMAIN-HERE/verify-license.php';
+  import.meta.env.VITE_LICENSE_VERIFY_URL ?? 'https://apivocnote.msalehzadeh.com/verify-license.php';
 
 /** Thrown when the request could not reach the server at all (offline, DNS, CORS…). */
 export class NetworkUnavailableError extends Error {
