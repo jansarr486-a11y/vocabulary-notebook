@@ -67,7 +67,7 @@ export const en: Record<string, string> = {
   'about.desc': 'A personal notebook for English vocabulary — works fully offline, made for tutoring students.',
   'about.version': 'Version',
   'about.feedback.title': 'Criticism & suggestions',
-  'about.feedback.body': 'Found a bug, or have an idea that would make the notebook better? Write to us — every message is read:',
+  'about.feedback.body': 'Found a bug, or have an idea that would make the notebook better? Write to me — every message is read:',
   'about.feedback.button': '📧 Send feedback',
 
   // ---------- progress: header ----------

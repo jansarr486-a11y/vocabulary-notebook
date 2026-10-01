@@ -3,12 +3,15 @@
 An offline-first, installable **PWA** for a private English tutor's students
 (ages 8–18, levels A1–B2, plus IELTS/TOEFL tracks).
 
+**Developed by Mohammad Salehzadeh.**
+
 **Zero backend. Zero cost. Zero cloud.** All data lives exclusively in the
 student's own browser (IndexedDB) — nothing ever leaves the device except one
 optional, clearly-marked dictionary lookup.
 
-**Live app:** https://jansarr486-a11y.github.io/vocabulary-notebook/
-(open in Chrome/Edge → install icon in the address bar → works offline forever)
+**Live app:** https://vocnote.msalehzadeh.com
+(mirror: https://jansarr486-a11y.github.io/vocabulary-notebook/ —
+open in Chrome/Edge → install icon in the address bar → works offline forever)
 
 ## Features
 
