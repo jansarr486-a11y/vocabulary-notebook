@@ -1,0 +1,48 @@
+/* License activation gate — additive and self-contained.
+   Reuses the notebook card language (.gate-wrap / .paper-card .washi /
+   .field / .input / .btn) so the screen matches the rest of the app. */
+
+.license-card {
+  max-width: 420px;
+}
+
+.license-activate {
+  width: 100%;
+  margin-top: var(--sp-4);
+}
+
+.license-error {
+  color: var(--red);
+  background: var(--red-soft);
+  border: 1.5px solid var(--red);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  margin: var(--sp-2) 0;
+}
+
+.license-hint {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.license-note {
+  margin: var(--sp-3) 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* Non-intrusive re-check banner: sits above the app header, never blocks
+   navigation; the session keeps working while it is visible. */
+.license-banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--yellow-soft);
+  color: var(--ink);
+  border-bottom: 2px solid var(--yellow);
+  padding: 10px 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}

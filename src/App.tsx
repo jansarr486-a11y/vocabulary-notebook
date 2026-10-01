@@ -17,6 +17,7 @@ import { Spelling } from './features/spelling/Spelling';
 import { Progress } from './features/progress/Progress';
 import { Settings } from './features/settings/Settings';
 import { I18nProvider, useI18n } from './i18n';
+import { LicenseGate } from './features/license/LicenseGate';
 
 /** Registers the service worker; checks for updates hourly while open. */
 function PwaUpdater() {
@@ -118,13 +119,17 @@ export default function App() {
     <ErrorBoundary>
       <I18nProvider>
         <ToastProvider>
-          <ProfileProvider>
-            <HashRouter>
-              <PwaUpdater />
-              <PwaToasts />
-              <AppRoutes />
-            </HashRouter>
-          </ProfileProvider>
+          {/* License gate — additive activation check; nothing below mounts
+              until a valid license exists in the separate 'license' store. */}
+          <LicenseGate>
+            <ProfileProvider>
+              <HashRouter>
+                <PwaUpdater />
+                <PwaToasts />
+                <AppRoutes />
+              </HashRouter>
+            </ProfileProvider>
+          </LicenseGate>
         </ToastProvider>
       </I18nProvider>
     </ErrorBoundary>

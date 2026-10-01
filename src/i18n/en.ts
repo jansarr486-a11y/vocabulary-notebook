@@ -598,4 +598,23 @@ export const en: Record<string, string> = {
   'st.keepIt': 'Keep it',
   'st.deleteEverything': 'Delete everything',
   'st.deleteProfileBody': 'This permanently deletes {name}’s profile and every word in this notebook from this device. Export a JSON backup first if you might want it back!',
+
+  // ---------- license activation ----------
+  'lic.title': 'Activate your notebook',
+  'lic.subtitle': 'This notebook activates once with your tutor’s license.',
+  'lic.email': 'Email',
+  'lic.emailPlaceholder': 'you@example.com',
+  'lic.key': 'License key',
+  'lic.keyPlaceholder': 'e.g. ABCD-1234-EFGH',
+  'lic.activate': 'Activate',
+  'lic.activating': 'Activating…',
+  'lic.internetNote': 'You need internet once to activate. After that, the app works fully offline.',
+  'lic.err.not_found': 'Email or license key not recognized',
+  'lic.err.revoked': 'This license is no longer active',
+  'lic.err.expired': 'This license has expired',
+  'lic.err.missing_fields': 'Please fill in both fields',
+  'lic.err.network': 'You need internet to activate for the first time. Please connect and try again.',
+  'lic.err.generic': 'Activation failed — please try again.',
+  'lic.err.hint': 'Still not working? Contact your tutor to check your license.',
+  'lic.banner': 'Your license needs attention — please contact your tutor',
 };
