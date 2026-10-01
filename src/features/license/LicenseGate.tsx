@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useI18n } from '../../i18n';
 import { verifyLicense } from './licenseApi';
-import { getLicense, saveLicense, type LicenseRecord } from './licenseDb';
+import { getLicense, getOrCreateDeviceId, saveLicense, type LicenseRecord } from './licenseDb';
 import { isStale } from './licenseLogic';
 import { ActivationScreen } from './ActivationScreen';
 import './license.css';
@@ -53,7 +53,8 @@ export function LicenseGate({ children }: { children: ReactNode }) {
 
   const recheck = async (stored: LicenseRecord, cancelled: boolean) => {
     try {
-      const outcome = await verifyLicense(stored.email, stored.licenseKey);
+      const deviceId = await getOrCreateDeviceId();
+      const outcome = await verifyLicense(stored.email, stored.licenseKey, deviceId);
       if (cancelled) return;
       if (outcome.ok) {
         const updated: LicenseRecord = {

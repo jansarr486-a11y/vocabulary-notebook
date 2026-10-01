@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RECHECK_INTERVAL_MS, isStale, reasonKey } from './licenseLogic';
+import { RECHECK_INTERVAL_MS, generateDeviceUuid, isStale, reasonKey } from './licenseLogic';
 
 describe('license gate logic', () => {
   describe('isStale', () => {
@@ -22,12 +22,27 @@ describe('license gate logic', () => {
       expect(reasonKey('revoked')).toBe('lic.err.revoked');
       expect(reasonKey('expired')).toBe('lic.err.expired');
       expect(reasonKey('missing_fields')).toBe('lic.err.missing_fields');
+      expect(reasonKey('device_limit_reached')).toBe('lic.err.device_limit_reached');
+      expect(reasonKey('not_started_yet')).toBe('lic.err.not_started_yet');
     });
 
     it('falls back to the generic message for unknown or missing reasons', () => {
       expect(reasonKey('something_else')).toBe('lic.err.generic');
       expect(reasonKey(undefined)).toBe('lic.err.generic');
       expect(reasonKey(null)).toBe('lic.err.generic');
+    });
+  });
+
+  describe('generateDeviceUuid', () => {
+    const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+    it('returns a valid RFC 4122 v4 UUID', () => {
+      expect(generateDeviceUuid()).toMatch(UUID_V4);
+    });
+
+    it('generates a different UUID on every call', () => {
+      const seen = new Set(Array.from({ length: 50 }, () => generateDeviceUuid()));
+      expect(seen.size).toBe(50);
     });
   });
 });

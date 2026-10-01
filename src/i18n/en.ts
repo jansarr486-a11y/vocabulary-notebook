@@ -613,6 +613,10 @@ export const en: Record<string, string> = {
   'lic.err.revoked': 'This license is no longer active',
   'lic.err.expired': 'This license has expired',
   'lic.err.missing_fields': 'Please fill in both fields',
+  'lic.err.device_limit_reached':
+    'This license is already being used on the maximum number of devices. Please ask your tutor to free up a device slot, or contact them for help.',
+  'lic.err.not_started_yet':
+    'This license isn’t active yet — please try again later or contact your tutor.',
   'lic.err.network': 'You need internet to activate for the first time. Please connect and try again.',
   'lic.err.generic': 'Activation failed — please try again.',
   'lic.err.hint': 'Still not working? Contact your tutor to check your license.',

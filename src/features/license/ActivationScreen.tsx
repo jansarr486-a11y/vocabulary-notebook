@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useI18n } from '../../i18n';
 import { NetworkUnavailableError, verifyLicense } from './licenseApi';
 import { reasonKey } from './licenseLogic';
-import { saveLicense, type LicenseRecord } from './licenseDb';
+import { getOrCreateDeviceId, saveLicense, type LicenseRecord } from './licenseDb';
 import './license.css';
 
 interface Props {
@@ -36,7 +36,8 @@ export function ActivationScreen({ initialEmail = '', initialLicenseKey = '', no
     setBusy(true);
     setError('');
     try {
-      const outcome = await verifyLicense(trimmedEmail, trimmedKey);
+      const deviceId = await getOrCreateDeviceId();
+      const outcome = await verifyLicense(trimmedEmail, trimmedKey, deviceId);
       if (!outcome.ok) {
         setError(t(reasonKey(outcome.reason)));
         return;

@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { generateDeviceUuid } from './licenseLogic';
 
 /**
  * License storage — a completely separate IndexedDB database so the main
@@ -26,9 +27,20 @@ export interface LicenseRecord {
 }
 
 const CURRENT_ID = 'current' as const;
+const DEVICE_ID = 'device' as const;
+
+/**
+ * Per-installation device identity, stored permanently as its own row in
+ * the same `license` store. Written once on first launch (even before any
+ * activation succeeds) and never changed afterwards.
+ */
+interface DeviceRow {
+  id: 'device';
+  deviceId: string;
+}
 
 class LicenseDb extends Dexie {
-  license!: Table<LicenseRecord, string>;
+  license!: Table<LicenseRecord | DeviceRow, string>;
 
   constructor() {
     super('vocabulary-notebook-license');
@@ -41,9 +53,24 @@ class LicenseDb extends Dexie {
 const licenseDb = new LicenseDb();
 
 export async function getLicense(): Promise<LicenseRecord | undefined> {
-  return licenseDb.license.get(CURRENT_ID);
+  const row = await licenseDb.license.get(CURRENT_ID);
+  return row && row.id === 'current' ? (row as LicenseRecord) : undefined;
 }
 
 export async function saveLicense(record: LicenseRecord): Promise<void> {
   await licenseDb.license.put(record);
+}
+
+/**
+ * The stable device ID for this installation, creating and persisting it
+ * on first call. All subsequent calls return the exact same value.
+ */
+export async function getOrCreateDeviceId(): Promise<string> {
+  const row = await licenseDb.license.get(DEVICE_ID);
+  if (row && row.id === 'device' && typeof row.deviceId === 'string' && row.deviceId) {
+    return row.deviceId;
+  }
+  const deviceId = generateDeviceUuid();
+  await licenseDb.license.put({ id: DEVICE_ID, deviceId });
+  return deviceId;
 }

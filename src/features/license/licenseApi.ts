@@ -36,14 +36,20 @@ interface RawResponse {
  * Verify a license against the activation endpoint. Rejects with
  * NetworkUnavailableError when the network itself fails; resolves with
  * ok:false for server-side rejections (unknown key, revoked, expired…).
+ * The deviceId identifies this installation (server-side device-limit
+ * enforcement); userAgent is a friendly label for the tutor's admin view.
  */
-export async function verifyLicense(email: string, licenseKey: string): Promise<VerifyOutcome> {
+export async function verifyLicense(
+  email: string,
+  licenseKey: string,
+  deviceId: string,
+): Promise<VerifyOutcome> {
   let response: Response;
   try {
     response = await fetch(LICENSE_VERIFY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, licenseKey }),
+      body: JSON.stringify({ email, licenseKey, deviceId, userAgent: navigator.userAgent }),
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
