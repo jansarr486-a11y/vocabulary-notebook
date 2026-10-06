@@ -58,7 +58,7 @@ open in Chrome/Edge → install icon in the address bar → works offline foreve
 
 Vite + React 18 + TypeScript · Dexie 4 (IndexedDB) · vite-plugin-pwa
 (Workbox, autoUpdate) · jsPDF (lazy-loaded) · html-to-image (lazy-loaded) ·
-HashRouter · self-hosted Caveat + Nunito fonts · Vitest.
+HashRouter · self-hosted Lora + Nunito fonts · Vitest.
 
 No server, no API routes, no accounts, no tracking.
 

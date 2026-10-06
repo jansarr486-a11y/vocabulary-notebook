@@ -1,8 +1,8 @@
 /* ---------- Fonts (self-hosted, offline-safe) ---------- */
 /* Mitra — Persian typeface for all Farsi text. unicode-range limits it to
    Arabic-script glyphs, so it supplies the Persian letters wherever they
-   appear (body, headings, handwriting titles) while English words and Latin
-   digits keep Nunito/Caveat. */
+   appear (body, headings, display titles) while English words and Latin
+   digits keep Nunito/Lora. */
 @font-face {
   font-family: 'Mitra';
   src: url('/fonts/mitra-400.woff') format('woff');
@@ -19,16 +19,25 @@
   font-display: swap;
   unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
 }
+/* Lora — formal, academic serif for the brand, vocabulary words and
+   display moments (replaced the handwriting font after user testing). */
 @font-face {
-  font-family: 'Caveat';
-  src: url('/fonts/caveat-600.woff2') format('woff2');
+  font-family: 'Lora';
+  src: url('/fonts/lora-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/lora-600.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Caveat';
-  src: url('/fonts/caveat-700.woff2') format('woff2');
+  font-family: 'Lora';
+  src: url('/fonts/lora-700.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -86,7 +95,8 @@
   --radius-md: 14px;
   --radius-lg: 22px;
 
-  --font-hand: 'Caveat', 'Mitra', 'Comic Sans MS', cursive;
+  /* historical name kept (used across all stylesheets); now a formal serif */
+  --font-hand: 'Lora', 'Mitra', Georgia, serif;
   --font-body: 'Nunito', 'Mitra', system-ui, -apple-system, sans-serif;
 
   --sp-1: 4px;

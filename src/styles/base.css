@@ -27,8 +27,8 @@ body {
   line-height: 1.55;
 }
 
-/* Functional headings use the clean sans — the script font is reserved for the
-   brand, vocabulary words, and decorative moments (kept per-element). */
+/* Functional headings use the clean sans — the serif display font is reserved
+   for the brand, vocabulary words, and decorative moments (kept per-element). */
 h1,
 h2,
 h3 {

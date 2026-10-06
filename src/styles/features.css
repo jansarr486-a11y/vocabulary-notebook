@@ -1207,7 +1207,7 @@
 
 /* ---------- Persian meaning subtitle ----------
    Persian runs RTL even inside LTR cards: right-aligned, clean sans stack
-   (Caveat has no Arabic glyphs), slightly larger for Arabic-script legibility. */
+   (Lora has no Arabic glyphs), slightly larger for Arabic-script legibility. */
 .persian-meaning {
   font-family: var(--font-body);
   font-size: 0.95rem;
