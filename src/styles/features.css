@@ -1408,6 +1408,22 @@
   font-size: 0.92rem;
 }
 
+/* Phones: attach the search/add bar to the very top of the screen. The sticky
+   app header is unreliable in the iOS standalone PWA (it can scroll away), so
+   the bar must not depend on it — and it sits above the header z-index so it
+   stays visible either way. Navigation stays available in the bottom tab bar. */
+@media (max-width: 720px) {
+  .lib-batch-bar:not(.lib-global-actions) {
+    top: env(safe-area-inset-top, 0px); /* clear the iPhone notch in standalone mode */
+    z-index: 35;
+  }
+  /* The A–Z strip can't pick a safe sticky offset under the variable-height
+     bar — let it scroll with the list on phones. */
+  .lib-list-layout .alpha-strip {
+    position: static;
+  }
+}
+
 .lib-batch-actions {
   display: flex;
   align-items: center;
