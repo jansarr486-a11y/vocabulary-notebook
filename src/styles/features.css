@@ -1361,6 +1361,29 @@
 }
 
 /* batch action bar */
+/* Library-wide search (root page) */
+.lib-global-search {
+  margin-bottom: var(--sp-4);
+}
+.lib-global-search-input {
+  width: 100%;
+  min-height: calc(var(--tap) + 4px);
+  font-size: 1rem;
+}
+.lib-global-status {
+  margin-bottom: var(--sp-3);
+}
+.lib-global-source {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+.lib-global-actions {
+  position: sticky;
+  bottom: 76px; /* above the bottom tab bar */
+  top: auto;
+}
+
 .lib-batch-bar {
   position: sticky;
   top: 76px; /* below the sticky app header */

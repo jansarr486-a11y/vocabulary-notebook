@@ -402,12 +402,225 @@ function WordListView({
   );
 }
 
+/**
+ * Normalise for matching: case-fold, drop ZWNJ, and unify Arabic yok/kaf
+ * variants so Persian-meaning search matches however the text was typed.
+ */
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/\u200C/g, '')
+    .replace(/[\u064A\u0649]/g, '\u06CC')
+    .replace(/\u0643/g, '\u06A9');
+
+interface GlobalWordHit {
+  entry: LibraryWord;
+  collection: LibraryCollection;
+  book: LibraryBook;
+  level: LibraryLevel | undefined;
+}
+
+/** Every word in the library, flattened once, with its source and duplicate words removed. */
+const ALL_LIBRARY_HITS: GlobalWordHit[] = (() => {
+  const hits: GlobalWordHit[] = [];
+  const seen = new Set<string>();
+  for (const collection of WORD_LIBRARY) {
+    for (const book of collection.books) {
+      const level = book.level ?? collection.level;
+      for (const entry of book.words) {
+        const key = entry.word.trim().toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        hits.push({ entry, collection, book, level });
+      }
+    }
+  }
+  return hits;
+})();
+
+function GlobalWordRow({
+  hit,
+  alreadyAdded,
+  selected,
+  onToggle,
+}: {
+  hit: GlobalWordHit;
+  alreadyAdded: boolean;
+  selected: boolean;
+  onToggle: (h: GlobalWordHit) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <li className={`lib-word-row paper-card ${alreadyAdded ? 'lib-word-added' : ''}`}>
+      <div className="lib-word-main">
+        <div className="lib-word-title">
+          <span className="lib-word-headword">{hit.entry.word}</span>
+          <SpeakerButton text={hit.entry.word} small />
+          {hit.entry.partOfSpeech && <span className="chip lib-chip-pos">{hit.entry.partOfSpeech}</span>}
+          {hit.entry.phonetic && <span className="lib-phonetic">{hit.entry.phonetic}</span>}
+        </div>
+        <p className="lib-word-def">{hit.entry.definition}</p>
+        {hit.entry.persianMeaning && <p className="lib-word-fa">{hit.entry.persianMeaning}</p>}
+        {hit.entry.example && <p className="lib-word-example">“{hit.entry.example}”</p>}
+        <p className="lib-global-source">
+          {hit.book.title === hit.collection.title
+            ? t('lib.globalSourceCollection', { collection: hit.collection.title })
+            : t('lib.globalSource', { collection: hit.collection.title, book: hit.book.title })}
+        </p>
+      </div>
+      <div className="lib-word-action">
+        {alreadyAdded ? (
+          <span className="chip lib-chip-added" title={t('lib.alreadyAddedTitle')}>
+            {t('lib.alreadyAdded')}
+          </span>
+        ) : (
+          <label className={`lib-check ${selected ? 'checked' : ''}`}>
+            <input type="checkbox" checked={selected} onChange={() => onToggle(hit)} />
+            <span>{selected ? t('lib.selected') : t('lib.add')}</span>
+          </label>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/** Library-wide search: one query across every collection and book. */
+function LibrarySearch({ query }: { query: string }) {
+  const { profile } = useProfiles();
+  const { t } = useI18n();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const added = useAddedWordSet(profile?.id);
+  const [directToReview, setDirectToReview] = useState(false);
+  const [selected, setSelected] = useState<GlobalWordHit[]>([]);
+
+  const q = norm(query.trim());
+  const { total, shown } = useMemo(() => {
+    if (!q) return { total: 0, shown: [] as GlobalWordHit[] };
+    const all = ALL_LIBRARY_HITS.filter(
+      (h) =>
+        norm(h.entry.word).includes(q) ||
+        norm(h.entry.definition).includes(q) ||
+        norm(h.entry.persianMeaning ?? '').includes(q),
+    );
+    return { total: all.length, shown: all.slice(0, 100) };
+  }, [q]);
+
+  const selectedSet = useMemo(() => new Set(selected.map((h) => h.entry.word)), [selected]);
+  const available = shown.filter((h) => !added.has(h.entry.word.trim().toLowerCase()));
+  const selectedAvailable = selected.filter((h) => available.includes(h));
+
+  const toggle = (h: GlobalWordHit) =>
+    setSelected((prev) =>
+      prev.some((x) => x.entry.word === h.entry.word)
+        ? prev.filter((x) => x.entry.word !== h.entry.word)
+        : [...prev, h],
+    );
+
+  const addSelected = async () => {
+    if (!profile || selectedAvailable.length === 0) return;
+    let n = 0;
+    for (const hit of selectedAvailable) {
+      const source = {
+        collectionId: hit.collection.id,
+        collectionTitle: hit.collection.title,
+        bookId: hit.book.id,
+        bookTitle: hit.book.title,
+      };
+      n += directToReview
+        ? await addLibraryWordsForReview(profile.id!, [hit.entry], source, hit.level)
+        : await addLibraryWords(profile.id!, [hit.entry], source, hit.level);
+    }
+    setSelected([]);
+    if (profile?.id != null && n > 0) {
+      for (let i = 0; i < n; i++) {
+        logProgressEvent(profile.id, { type: 'word_added', meta: { source: 'library' } });
+      }
+    }
+    const key =
+      n === 1
+        ? directToReview
+          ? 'lib.addedOneReview'
+          : 'lib.addedOne'
+        : directToReview
+          ? 'lib.addedManyReview'
+          : 'lib.addedMany';
+    toast(t(key, n === 1 ? { word: selectedAvailable[0].entry.word } : { n }));
+    navigate(directToReview ? '/review' : '/notebook');
+  };
+
+  return (
+    <div>
+      <p className="faint lib-global-status" role="status">
+        {q ? t('lib.globalResults', { n: total }) : t('lib.globalEmptyQ')}
+      </p>
+      <ul className="lib-word-list">
+        {shown.map((hit) => (
+          <GlobalWordRow
+            key={hit.entry.word}
+            hit={hit}
+            alreadyAdded={added.has(hit.entry.word.trim().toLowerCase())}
+            selected={selectedSet.has(hit.entry.word)}
+            onToggle={toggle}
+          />
+        ))}
+        {q && shown.length === 0 && (
+          <div className="empty-state">
+            <span className="doodle">🔍</span>
+            <h3>{t('lib.globalNoMatch', { q: query })}</h3>
+            <p>{t('lib.globalNoMatchBody')}</p>
+          </div>
+        )}
+      </ul>
+      {available.length > 0 && (
+        <div className="lib-batch-bar lib-global-actions">
+          <span className="muted" style={{ fontSize: '0.9rem' }}>
+            {selectedAvailable.length > 0
+              ? t('lib.nSelected', { n: selectedAvailable.length })
+              : t('lib.noneSelected')}
+          </span>
+          <div className="lib-batch-actions">
+            <label
+              className={`lib-check lib-check-review ${directToReview ? 'checked' : ''}`}
+              title={t('lib.reviewModeTitle')}
+            >
+              <input
+                type="checkbox"
+                checked={directToReview}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    const ok = window.confirm(
+                      `${t('lib.reviewConfirmTitle')}\n\n${t('lib.reviewConfirmBody')}`,
+                    );
+                    if (ok) setDirectToReview(true);
+                  } else {
+                    setDirectToReview(false);
+                  }
+                }}
+              />
+              <span>{t('lib.reviewMode')}</span>
+            </label>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={selectedAvailable.length === 0}
+              onClick={() => void addSelected()}
+            >
+              {directToReview ? t('lib.addToReview') : t('lib.addSelected')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Library() {
   const { collectionId, bookId } = useParams();
   const { profile } = useProfiles();
   const { t } = useI18n();
   const added = useAddedWordSet(profile?.id);
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
 
   // Deep-linked straight to a book: /library/:collectionId/:bookId
   const ref = useMemo(
@@ -488,6 +701,20 @@ export function Library() {
         </div>
       </div>
 
+      <div className="lib-global-search">
+        <input
+          className="input lib-global-search-input"
+          type="search"
+          placeholder={t('lib.globalSearchPlaceholder')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label={t('lib.globalSearchAria')}
+        />
+      </div>
+
+      {search.trim() !== '' && <LibrarySearch query={search} />}
+
+      {search.trim() === '' && (
       <div className="lib-collection-grid">
         {WORD_LIBRARY.map((collection) => {
           const counts = countsFor(collectionWords(collection), added);
@@ -523,6 +750,7 @@ export function Library() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

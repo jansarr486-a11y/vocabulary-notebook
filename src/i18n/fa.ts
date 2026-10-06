@@ -462,6 +462,14 @@ export const fa: Record<string, string> = {
   'lib.addedOf': '{added} از {total} به دفترچه اضافه شده',
   'lib.openBook': 'باز کردن کتاب ←',
   'lib.browseBooks': 'مرور کتاب‌ها ←',
+  'lib.globalSearchPlaceholder': '🔍 جست‌وجو در همهٔ کتاب‌ها…',
+  'lib.globalSearchAria': 'جست‌وجو در کل کتابخانهٔ واژه',
+  'lib.globalEmptyQ': 'برای جست‌وجو در همهٔ کتاب‌ها، همین بالا بنویس.',
+  'lib.globalResults': '{n} واژهٔ پیدا‌شده در کل کتابخانه:',
+  'lib.globalSource': 'از {collection} — {book}',
+  'lib.globalSourceCollection': 'از {collection}',
+  'lib.globalNoMatch': 'واژه‌ای با «{q}» پیدا نشد',
+  'lib.globalNoMatchBody': 'املای دیگری امتحان کن — یا معنای فارسی را هم جست‌وجو کن.',
 
   // ---------- review ----------
   'rv.title': 'آزمون مرور',

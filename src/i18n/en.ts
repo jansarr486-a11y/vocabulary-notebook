@@ -462,6 +462,14 @@ export const en: Record<string, string> = {
   'lib.addedOf': '{added} of {total} added to notebook',
   'lib.openBook': 'Open book →',
   'lib.browseBooks': 'Browse books →',
+  'lib.globalSearchPlaceholder': '🔍 Search all books…',
+  'lib.globalSearchAria': 'Search the whole word library',
+  'lib.globalEmptyQ': 'Type above to search every book in the library.',
+  'lib.globalResults': '{n} matching word(s) across the library:',
+  'lib.globalSource': 'From {collection} — {book}',
+  'lib.globalSourceCollection': 'From {collection}',
+  'lib.globalNoMatch': 'No words match “{q}”',
+  'lib.globalNoMatchBody': 'Try another spelling — or search the Persian meaning too.',
 
   // ---------- review ----------
   'rv.title': 'Review quiz',
